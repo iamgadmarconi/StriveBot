@@ -1,0 +1,6 @@
+beautifulsoup4==4.12.3
+openai==1.23.2
+spacy==3.7.4
+python-dotenv==1.0.1
+pandas==2.2.2
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
