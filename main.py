@@ -18,10 +18,10 @@ def main():
 
     agent = Agent()
 
-    # print(agent.profile_matcher(profiles, job))
+    name = agent.profile_matcher(profiles, job)
+    candidate = profiles.get_profile(name)
 
-    gad = profiles.get_profile("Gad Marconi")
-    print(agent.motivation_letter(gad, job))
+    print(agent.motivation_letter(candidate, job))
 
 
 if __name__ == "__main__":
