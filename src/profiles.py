@@ -5,12 +5,21 @@ class Profile:
 
     def __init__(self, data) -> None:
         self.name = data["name"]
-        self.profile = data["profile"]
+        self.interests = data["interests"]
         self.experience = data["experience"]
         self.skills = data["skills"]
 
     def __repr__(self) -> str:
-        return f"Profile(Name: {self.name}, Profile: {self.profile}, Skills: {self.skills}, Experience: {self.experience})"
+        return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience})"
+
+    def __str__(self) -> str:
+        return f"""
+                -------------------
+                Profile Details for {self.name}
+                Skills: {self.skills}
+                Experience: {self.experience}
+                Interests: {self.interests}
+                """
 
 
 class ProfileManager:
@@ -34,13 +43,16 @@ class ProfileManager:
 
     def __repr__(self) -> str:
         return f"ProfileManager(Profiles: {self.profiles})"
+    
+    def __str__(self) -> str:
+        return self.get_profiles_description()
 
     def get_profiles_description(self) -> str:
         description = ""
         for profile in self.profiles:
             description += "\n--------------------------------------------------\n"
             description += f"**Name**: {profile.name}\n"
-            description += f"**Profile**: {profile.profile}\n"
+            description += f"**Interests**: {profile.interests}\n"
             description += f"**Experience**: {profile.experience}\n"
             description += f"**Skills**: {profile.skills}\n"
 
@@ -50,4 +62,3 @@ class ProfileManager:
 def get_data(file_name: str = r"src\candidates\candidates.csv") -> dict:
     df = pd.read_csv(file_name, delimiter=";")
     return df.to_dict(orient="records")
-

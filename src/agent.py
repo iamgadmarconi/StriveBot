@@ -48,7 +48,7 @@ def motivation_letter(agent: Agent, profile: Profile, job: Job):
     return response.choices[0].message.content
 
 
-def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> Profile:
+def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
 
     response = agent.client.chat.completions.create(
         model="gpt-4-turbo",
@@ -65,21 +65,30 @@ def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> Profile
                     {job.position}.\n
 
                     The job has the following description:\n
-                    {job.description}\n
+                    {job.assignment.description}\n
 
                     The job requires the following skills:\n
-                    {job.skills}\n
+                    {job.assignment.skills}\n
 
                     You have the following candidates:\n
-                    {profiles.get_profiles_description()}\n
+                    {str(profiles)}\n
                     """,
             },
             {
                 "role": "user",
-                "content": "Return the name of the best matching candidates (up to a maximum of 3) for the job. Be critical in your selection.",
+                "content": "Return the name of the best matching candidates (up to a maximum of 3) for the job. Be critical in your selection. Format the output as:\n'Candidate 1,Candidate 2,Candidate 3'",
             },
         ],
         temperature=0.1,
     )
 
     return response.choices[0].message.content
+
+def profile_from_names(names: str) -> Profile:
+    profiles = []
+    for name in names.split(","):
+        profile = ProfileManager().get_profile(name)
+        if profile:
+            profiles.append(profile)
+
+    return profiles
