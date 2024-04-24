@@ -136,13 +136,16 @@ class Job:
                 """
 
     def _get_assignment_from_url(self) -> Assignment:
+        print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
         html_file = requests.get(self.url).text
         soup = BeautifulSoup(html_file, "html.parser")
         assignments = soup.find("div", {"id": "hfp_assignments"})
         description = assignments.find("div", class_="hfp_content").text.strip()
-
-        self.assignment = Assignment(categorize_description(self.agent, clean_text(description)))
-
+        # print(f"\n --debug--\n\nDescription: {description}\n--debug--\n")
+        cleaned_text = clean_text(description)
+        # print(f"\nCleaned text:\n {cleaned_text}\n")
+        assignment = Assignment(categorize_description(self.agent, cleaned_text))
+        return assignment
 
 def get_jobs(agent, query: str = None) -> list[Job]:
     url = (

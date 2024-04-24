@@ -16,14 +16,17 @@ def motivation_letter(agent: Agent, profile: Profile, job: Job):
 
                     You are an assistant helping a candidate write a motivation letter for a job application.
                     The candidate is applying to the following position:\n
-                    {job.position}.\n
+                    {job.position} at {job.company}.\n
 
-                    The job has the following description:\n
-                    {job.description}\n
+                    The job has the following requirements:\n
+                    {job.assignment.requirements}\n
 
                     The job requires the following skills:\n
-                    {job.skills}\n
+                    {job.assignment.skills}\n
 
+                    The job has the following preferences:\n
+                    {job.assignment.preferences}\n
+                    -------------------
                     The candidate, {profile.name}, has the following profile:\n
                     {profile.profile}\n
 
