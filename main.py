@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 
 from src.profiles import ProfileManager
-from src.utils import Agent
+from src.utils import Agent, pretty_print_matches
 from src.scraper import Job, get_jobs
 from src.agent import motivation_letter, profile_matcher, profile_from_names
 from src.save import save_job_to_csv
@@ -28,12 +28,12 @@ def get_matches():
         "Ministry of Justice and Security (JenV)",
     )
 
-    jobs = get_jobs(agent)
+    # jobs = get_jobs(agent)
     sample_jobs = [sample_job_1, sample_job_2]  # for testing
 
     matches = []
 
-    for job in jobs:
+    for job in sample_jobs:
         # print(job)
         profiles = profile_matcher(agent, all_profiles, job)
         if profiles:
@@ -49,10 +49,11 @@ def get_matches():
                     "Candidate": profile,
                     "Motivation": motivation_letter(agent, profile, job),
                 }
+                pretty_print_matches(data)
 
                 matches.append(data)
 
-            save_job_to_csv(job)
+            save_job_to_csv(job, force=True)
 
     return matches
 

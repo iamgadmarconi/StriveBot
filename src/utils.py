@@ -161,3 +161,17 @@ def parse_parameters_to_dict(text: str) -> dict:
             )  # Store None if value is empty
 
     return parsed_data
+
+
+def pretty_print_matches(match: dict) -> str:
+    string = f"""
+    Profile matched for {match['position']} at {match['company']}:\n\n
+    -------------------
+    Profile Matched:{match['candidate'].name}
+
+    Motivation Letter:
+    {match['motivation']}
+
+    -------------------
+    """
+    return string
