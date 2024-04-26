@@ -2,7 +2,7 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from src.utils import clean_text, Agent, categorize_description
+from src.utils import Agent, clean_text, categorize_description, get_parameters_from_raw_description
 
 
 class Assignment:
@@ -11,7 +11,6 @@ class Assignment:
         self._skills = self._description.get("SKILLS")
         self._requirements = self._description.get("REQUIREMENTS")
         self._preferences = self._description.get("PREFERENCES")
-        self._location = None
 
     @property
     def description(self):
@@ -29,10 +28,6 @@ class Assignment:
     def preferences(self):
         return self._preferences
 
-    @property
-    def location(self):
-        return self._location
-
     @description.setter
     def description(self, value):
         self._description = value
@@ -48,10 +43,6 @@ class Assignment:
     @preferences.setter
     def preferences(self, value):
         self._preferences = value
-
-    @location.setter
-    def location(self, value):
-        self._location = value
 
     def __repr__(self) -> str:
         return f"Assignment({self.preferences}, {self.requirements}, {self.skills}"
@@ -73,9 +64,25 @@ class Job:
         self._url = url
         self.position = position
         self.company = company
+
+        self._soup = self._get_soup()
+
         self._commitment = None
         self._start = None
+        self._location = None
+        self._max_hourly_rate = None
+        self._end = None
+        self._deadline = None
+        self._submitter = None
+
+        self._status = self._get_job_status()
+        self._candidates = []
+        self._get_job_params()
         self._assignment = self._get_assignment_from_url()
+
+    @property
+    def soup(self):
+        return self._soup
 
     @property
     def agent(self):
@@ -92,6 +99,34 @@ class Job:
     @property
     def start(self):
         return self._start
+    
+    @property
+    def location(self):
+        return self._location
+    
+    @property
+    def max_hourly_rate(self):
+        return self._max_hourly_rate
+    
+    @property
+    def end(self):
+        return self._end
+    
+    @property
+    def deadline(self):
+        return self._deadline
+    
+    @property
+    def submitter(self):
+        return self._submitter
+    
+    @property
+    def status(self):
+        return self._status
+    
+    @property
+    def candidates(self):
+        return self._candidates
 
     @property
     def assignment(self):
@@ -109,9 +144,37 @@ class Job:
     def start(self, value):
         self._start = value
 
+    @location.setter
+    def location(self, value):
+        self._location = value
+
+    @max_hourly_rate.setter
+    def max_hourly_rate(self, value):
+        self._max_hourly_rate = value
+
+    @end.setter
+    def end(self, value):
+        self._end = value
+
+    @deadline.setter
+    def deadline(self, value):
+        self._deadline = value
+
+    @submitter.setter
+    def submitter(self, value):
+        self._submitter = value
+
+    @candidates.setter
+    def candidates(self, value):
+        self._candidates.append(value)
+
     @assignment.setter
-    def assignment(self, value):
+    def assignment(self, value: Assignment):
         self._assignment = value
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
     def __repr__(self) -> str:
         return f"Job({self.position}, {self.company}, {self.description}, {self.skills}, {self.commitment}, {self.location}, {self.start})"
@@ -124,28 +187,85 @@ class Job:
 
                 Position: {self.position}
 
-                Commitment: {self.commitment}
-
-                Start: {self.start}
-
                 Assignment:
                 ------------
                 {self.assignment}
-
-                URL: {self.url}
                 """
 
-    def _get_assignment_from_url(self) -> Assignment:
-        print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
+    def _get_soup(self) -> BeautifulSoup:
         html_file = requests.get(self.url).text
         soup = BeautifulSoup(html_file, "html.parser")
-        assignments = soup.find("div", {"id": "hfp_assignments"})
+        return soup
+
+    def _get_job_status(self) -> str:
+        print(f"\nGetting job status for:\n{self.position} at {self.company}\n")
+
+        button_div = self.soup.find('div', class_='hfp_button hfp-button-outline-success no-transition mb-4 d-none d-sm-block')
+
+        # Find the <a> tag within that div
+        a_tag = button_div.find('a')
+
+        # Extract and return the text, if the <a> tag is found
+        return a_tag.text.strip() if a_tag else None
+
+
+    def _get_raw_job_description(self) -> str:
+        print(f"\nGetting job description for:\n{self.position} at {self.company}\n")
+        
+        assignments = self.soup.find("div", {"id": "hfp_assignments"})
         description = assignments.find("div", class_="hfp_content").text.strip()
         # print(f"\n --debug--\n\nDescription: {description}\n--debug--\n")
         cleaned_text = clean_text(description)
+        return cleaned_text
+    
+    def _get_raw_job_params(self) -> str:
+        print(f"\nGetting raw job parameters for:\n{self.position} at {self.company}\n")
+
+        info_block = self.soup.find('div', {"id": "hfp_assignment-info-block"})
+
+        # Find all 'hfp_item' divs within the 'hfp_assignment_info_block'
+        hfp_items = info_block.find_all('div', class_='hfp_item')
+
+        params_info = {}
+
+        for item in hfp_items:
+            # The key is the text of the 'p' tag
+            key = item.find('p').text.strip().lower() if item.find('p') else None
+            # The value is the text of the 'b' tag
+            value = item.find('b').text.strip() if item.find('b') else None
+
+            # If a key is found, add the key-value pair to the assignment_info dictionary
+            if key:
+                params_info[key] = value
+
+        return "\n".join(f"{key.capitalize()}: {value}" for key, value in params_info.items())
+
+
+    def _get_assignment_from_url(self) -> Assignment:
+        print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
         # print(f"\nCleaned text:\n {cleaned_text}\n")
+        cleaned_text = self._get_raw_job_description()
         assignment = Assignment(categorize_description(self.agent, cleaned_text))
         return assignment
+    
+    def _get_job_params(self) -> dict:
+        print(f"\nGetting job parameters for:\n{self.position} at {self.company}\n")
+        cleaned_text = self._get_raw_job_params()
+        params = get_parameters_from_raw_description(self.agent, cleaned_text)
+
+        key_to_attribute = {
+            'commitment': 'commitment',
+            'location': 'location',
+            'max_hourly_rate': 'max_hourly_rate',
+            'end_date': 'end',
+            'deadline': 'deadline',
+            'submitter': 'submitter'
+        }
+
+        for key, value in params.items():
+            attr = key_to_attribute.get(key)
+            if attr and hasattr(self, attr):
+                setattr(self, attr, value)
 
 def get_jobs(agent, query: str = None) -> list[Job]:
     url = (
