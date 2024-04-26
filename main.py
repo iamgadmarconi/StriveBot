@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 
 from src.profiles import ProfileManager
-from src.scraper import get_jobs, Job
 from src.utils import Agent
+from src.scraper import Job, get_jobs
 from src.agent import motivation_letter, profile_matcher, profile_from_names
 from src.save import save_job_to_csv
 
@@ -12,7 +12,7 @@ load_dotenv()
 def get_matches():
     agent = Agent()
 
-    profiles = ProfileManager()
+    all_profiles = ProfileManager()
 
     sample_job_1 = Job(
         agent,
@@ -28,18 +28,20 @@ def get_matches():
         "Ministry of Justice and Security (JenV)",
     )
 
-    # jobs = get_jobs(agent)
-    sample_jobs = [sample_job_1, sample_job_2] # for testing
+    jobs = get_jobs(agent)
+    sample_jobs = [sample_job_1, sample_job_2]  # for testing
 
     matches = []
 
-    for job in sample_jobs:
+    for job in jobs:
         # print(job)
-        profiles = profile_matcher(agent, profiles, job)
+        profiles = profile_matcher(agent, all_profiles, job)
         if profiles:
-            profiles = profile_from_names(profiles)
-            for profile in profiles:
-                print(f"\nProfile matched for {job.position} at {job.company}:\n{profile}\n")
+            profile_obj = profile_from_names(profiles)
+            for profile in profile_obj:
+                print(
+                    f"\nProfile matched for {job.position} at {job.company}:\n{profile}\n"
+                )
                 job.candidates = profile
                 data = {
                     "Position": job.position,
@@ -50,7 +52,10 @@ def get_matches():
 
                 matches.append(data)
 
+            save_job_to_csv(job)
+
     return matches
+
 
 def main():
     agent = Agent()
@@ -69,11 +74,11 @@ def main():
         "Ministry of Justice and Security (JenV)",
     )
 
-    sample_jobs = [sample_job_1, sample_job_2] # for testing
+    sample_jobs = [sample_job_1, sample_job_2]  # for testing
 
     for job in sample_jobs:
         save_job_to_csv(job)
 
 
 if __name__ == "__main__":
-    main()
+    get_matches()

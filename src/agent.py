@@ -85,9 +85,12 @@ def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
         temperature=0.1,
     )
 
-    print(f"\nResponse Candidate Match for {job.position}: {response.choices[0].message.content}\n")
+    print(
+        f"\nResponse Candidate Match for {job.position}: {response.choices[0].message.content}\n"
+    )
 
     return response.choices[0].message.content
+
 
 def profile_from_names(names: str) -> Profile:
     profiles = []

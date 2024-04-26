@@ -50,7 +50,9 @@ def categorize_description(agent: Agent, text: str) -> dict:
 
 def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> dict:
 
-    print(f"Extracting parameters from the following job description:\n{raw_description}\n")
+    print(
+        f"Extracting parameters from the following job description:\n{raw_description}\n"
+    )
 
     response = agent.client.chat.completions.create(
         model="gpt-4-turbo",

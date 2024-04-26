@@ -2,7 +2,12 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from src.utils import Agent, clean_text, categorize_description, get_parameters_from_raw_description
+from src.utils import (
+    Agent,
+    clean_text,
+    categorize_description,
+    get_parameters_from_raw_description,
+)
 
 
 class Assignment:
@@ -99,31 +104,31 @@ class Job:
     @property
     def start(self):
         return self._start
-    
+
     @property
     def location(self):
         return self._location
-    
+
     @property
     def max_hourly_rate(self):
         return self._max_hourly_rate
-    
+
     @property
     def end(self):
         return self._end
-    
+
     @property
     def deadline(self):
         return self._deadline
-    
+
     @property
     def submitter(self):
         return self._submitter
-    
+
     @property
     def status(self):
         return self._status
-    
+
     @property
     def candidates(self):
         return self._candidates
@@ -200,46 +205,52 @@ class Job:
     def _get_job_status(self) -> str:
         print(f"\nGetting job status for:\n{self.position} at {self.company}\n")
 
-        button_div = self.soup.find('div', class_='hfp_button hfp-button-outline-success no-transition mb-4 d-none d-sm-block')
+        button_div = self.soup.find(
+            "div",
+            class_="hfp_button hfp-button-outline-success no-transition mb-4 d-none d-sm-block",
+        )
 
         # Find the <a> tag within that div
-        a_tag = button_div.find('a')
+        try:
+            a_tag = button_div.find("a")
+        except AttributeError:
+            a_tag = None
 
         # Extract and return the text, if the <a> tag is found
         return a_tag.text.strip() if a_tag else None
 
-
     def _get_raw_job_description(self) -> str:
         print(f"\nGetting job description for:\n{self.position} at {self.company}\n")
-        
+
         assignments = self.soup.find("div", {"id": "hfp_assignments"})
         description = assignments.find("div", class_="hfp_content").text.strip()
         # print(f"\n --debug--\n\nDescription: {description}\n--debug--\n")
         cleaned_text = clean_text(description)
         return cleaned_text
-    
+
     def _get_raw_job_params(self) -> str:
         print(f"\nGetting raw job parameters for:\n{self.position} at {self.company}\n")
 
-        info_block = self.soup.find('div', {"id": "hfp_assignment-info-block"})
+        info_block = self.soup.find("div", {"id": "hfp_assignment-info-block"})
 
         # Find all 'hfp_item' divs within the 'hfp_assignment_info_block'
-        hfp_items = info_block.find_all('div', class_='hfp_item')
+        hfp_items = info_block.find_all("div", class_="hfp_item")
 
         params_info = {}
 
         for item in hfp_items:
             # The key is the text of the 'p' tag
-            key = item.find('p').text.strip().lower() if item.find('p') else None
+            key = item.find("p").text.strip().lower() if item.find("p") else None
             # The value is the text of the 'b' tag
-            value = item.find('b').text.strip() if item.find('b') else None
+            value = item.find("b").text.strip() if item.find("b") else None
 
             # If a key is found, add the key-value pair to the assignment_info dictionary
             if key:
                 params_info[key] = value
 
-        return "\n".join(f"{key.capitalize()}: {value}" for key, value in params_info.items())
-
+        return "\n".join(
+            f"{key.capitalize()}: {value}" for key, value in params_info.items()
+        )
 
     def _get_assignment_from_url(self) -> Assignment:
         print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
@@ -247,25 +258,26 @@ class Job:
         cleaned_text = self._get_raw_job_description()
         assignment = Assignment(categorize_description(self.agent, cleaned_text))
         return assignment
-    
+
     def _get_job_params(self) -> dict:
         print(f"\nGetting job parameters for:\n{self.position} at {self.company}\n")
-        cleaned_text = self._get_raw_job_params()
+        cleaned_text = self._get_raw_job_params() + self._get_raw_job_description()
         params = get_parameters_from_raw_description(self.agent, cleaned_text)
 
         key_to_attribute = {
-            'commitment': 'commitment',
-            'location': 'location',
-            'max_hourly_rate': 'max_hourly_rate',
-            'end_date': 'end',
-            'deadline': 'deadline',
-            'submitter': 'submitter'
+            "commitment": "commitment",
+            "location": "location",
+            "max_hourly_rate": "max_hourly_rate",
+            "end_date": "end",
+            "deadline": "deadline",
+            "submitter": "submitter",
         }
 
         for key, value in params.items():
             attr = key_to_attribute.get(key)
             if attr and hasattr(self, attr):
                 setattr(self, attr, value)
+
 
 def get_jobs(agent, query: str = None) -> list[Job]:
     url = (
