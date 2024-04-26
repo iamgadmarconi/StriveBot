@@ -10,6 +10,7 @@ class Profile:
         self.education = data["education"]
         self.profile = data["profile"]
         self.certificates = data["certifications"]
+        self._job_matches = []
 
     def __repr__(self) -> str:
         return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience}, Education: {self.education})"
@@ -25,6 +26,9 @@ class Profile:
                 Profile: {self.profile}
                 Certificates: {self.certificates}
                 """
+    
+    def add_job_match(self, job, motivation: str) -> None:
+        self._job_matches.append((job, motivation))
 
 
 class ProfileManager:

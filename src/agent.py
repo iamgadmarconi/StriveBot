@@ -50,11 +50,11 @@ def motivation_letter(agent: Agent, profile: Profile, job: Job):
 
 def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
 
-    print(f"\ndebug-- Available Profiles: {profiles}\n")
-    print(f"\ndebug-- Position: {job.position}\n")
-    print(f"\ndebug-- Description: {job.assignment.description}\n")
-    print(f"\ndebug-- Requirements: {job.assignment.requirements}\n")
-    print(f"\ndebug-- Skills: {job.assignment.skills}\n")
+    # print(f"\ndebug-- Available Profiles: {profiles}\n")
+    # print(f"\ndebug-- Position: {job.position}\n")
+    # print(f"\ndebug-- Description: {job.assignment.description}\n")
+    # print(f"\ndebug-- Requirements: {job.assignment.requirements}\n")
+    # print(f"\ndebug-- Skills: {job.assignment.skills}\n")
 
     response = agent.client.chat.completions.create(
         model="gpt-4-turbo",
@@ -85,9 +85,9 @@ def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
         temperature=0.1,
     )
 
-    print(
-        f"\nResponse Candidate Match for {job.position}: {response.choices[0].message.content}\n"
-    )
+    # print(
+    #     f"\nResponse Candidate Match for {job.position}: {response.choices[0].message.content}\n"
+    # )
 
     return response.choices[0].message.content
 

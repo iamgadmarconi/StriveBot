@@ -170,7 +170,7 @@ class Job:
         self._submitter = value
 
     @candidates.setter
-    def candidates(self, value):
+    def candidates(self, value: tuple):
         self._candidates.append(value)
 
     @assignment.setter

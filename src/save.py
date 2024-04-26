@@ -16,16 +16,10 @@ def save_job_to_csv(job: Job, force: bool = False) -> None:
         "Company",
         "Submitter",
         "Status",
-        "Candidate",
+        "Candidate/Motivation",
         "URL",
         "Description",
     ]
-    file_name = f"src\\jobs\\{job.position}_{job.company}.csv"
-
-    if not os.path.exists(file_name) or force:
-        with open(file_name, "w", newline="") as file:
-            writer = csv.writer(file, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(headers)
 
     new_data = [
         job.position,
@@ -42,8 +36,17 @@ def save_job_to_csv(job: Job, force: bool = False) -> None:
         job.url,
         job.assignment,
     ]
-    with open(file_name, "a", newline="") as file:
-        writer = csv.writer(file, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+
+    file_name = f"src\\jobs\\{job.position}_{job.company}.csv"
+
+    file_exists = os.path.exists(file_name)
+
+    # Open the file in the appropriate mode and write headers if necessary
+    with open(file_name, "a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file, delimiter=";", quoting=csv.QUOTE_ALL)
+        if not file_exists or force:
+            writer.writerow(headers)
+
         writer.writerow(new_data)
 
     print(f"Data saved to '{file_name}'.")
