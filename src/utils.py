@@ -165,12 +165,12 @@ def parse_parameters_to_dict(text: str) -> dict:
 
 def pretty_print_matches(match: dict) -> str:
     string = f"""
-    Profile matched for {match['position']} at {match['company']}:\n\n
+    Profile matched for {match['Position']} at {match['Company']}:\n\n
     -------------------
-    Profile Matched:{match['candidate'].name}
+    Profile Matched:{match['Candidate'].name}
 
     Motivation Letter:
-    {match['motivation']}
+    {match['Motivation']}
 
     -------------------
     """
