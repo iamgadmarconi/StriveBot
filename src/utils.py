@@ -163,7 +163,7 @@ def parse_parameters_to_dict(text: str) -> dict:
     return parsed_data
 
 
-def pretty_print_matches(match: dict) -> str:
+def pretty_print_matches(match: dict) -> None:
     string = f"""
     Profile matched for {match['Position']} at {match['Company']}:\n\n
     -------------------
@@ -174,4 +174,4 @@ def pretty_print_matches(match: dict) -> str:
 
     -------------------
     """
-    return string
+    print(string)
