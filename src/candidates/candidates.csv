@@ -1,3 +1,4 @@
-name;skills;experience;interests
-Gad Marconi;Python,C++;Senior software developer,python developer,ceo of google;a lot
-Karthikeyan Parameswaran;Stocks,Python;MareVisie;not as much
+name;skills;experience;interests;education;profile;certifications
+Gad Marconi;Python,C++;Senior software developer,python developer,ceo of google;a lot;high school diploma;lazy;none
+Karthikeyan Parameswaran;Stocks,Python;MareVisie;not as much;none;lazy;none
+John Doe;Scrum,agile,leadership,teamwork,sharing knowledge;10 years development experience in Java,15 years development experience in Python,6 years experience in Postgres/elasticsearch/bamboo/javascript,5 years experience in Docker,forensic domains;OOP,Systems engineering,Project Management,teamplayer;PhD in Computer Science,MSc in Software Engineering,BSc in Computer Science;Hardworking and dedicated individual with a passion for software development;Scrum Master,Agile Coach,Java Developer,Python Developer,Citrix,VMWare,Windows Server,Powershell Scripting Expert

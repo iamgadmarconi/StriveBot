@@ -50,37 +50,42 @@ def motivation_letter(agent: Agent, profile: Profile, job: Job):
 
 def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
 
+    print(f"\ndebug-- Available Profiles: {profiles}\n")
+    print(f"\ndebug-- Position: {job.position}\n")
+    print(f"\ndebug-- Description: {job.assignment.description}\n")
+    print(f"\ndebug-- Requirements: {job.assignment.requirements}\n")
+    print(f"\ndebug-- Skills: {job.assignment.skills}\n")
+
     response = agent.client.chat.completions.create(
         model="gpt-4-turbo",
         messages=[
             {
                 "role": "system",
                 "content": f"""
-                    BE EXTREMELY CRITICAL IN YOUR SELECTION. ONLY MATCH CANDIDATES IF THEY HAVE ALL REQUIRED SKILLS.\n
-
+                    You are an assistant designed to match job openings to potential candidates.\n
+                    BE EXTREMELY CRITICAL IN YOUR SELECTION. ONLY MATCH CANDIDATES IF THEY HAVE REQUIRED SKILLS.\n
                     RETURN **ONLY** THE NAME OF THE BEST MATCHING CANDIDATES (UP TO A MAXIMUM OF 3) FOR THE JOB.\n
-
-                    You are an assistant designed to match job openings to potential candidates.
                     The job is the following:\n
                     {job.position}.\n
-
                     The job has the following description:\n
                     {job.assignment.description}\n
-
+                    The job has the following requirements:\n
+                    {job.assignment.requirements}\n
                     The job requires the following skills:\n
                     {job.assignment.skills}\n
-
                     You have the following candidates:\n
                     {str(profiles)}\n
                     """,
             },
             {
                 "role": "user",
-                "content": "Return the name of the best matching candidates (up to a maximum of 3) for the job. Be critical in your selection. Format the output as:\n'Candidate 1,Candidate 2,Candidate 3'",
+                "content": "Return the name of the best matching candidates (up to a maximum of 3) for the job. Be critical in your selection. Format the output as:\n'Candidate 1,Candidate 2,Candidate 3'. If no candidates are available, return 'NO CANDIDATES FULLFILL JOB REQUIREMENTS\nEXPLANATION FOR WHY CANDIDATE 1 DOES NOT FULLFILL JOB REQUIREMENTS\nEXPLANATION FOR WHY CANDIDATE 2 DOES NOT FULLFILL JOB REQUIREMENTS\n etc.'.\n",
             },
         ],
         temperature=0.1,
     )
+
+    print(f"\nResponse Candidate Match for {job.position}: {response.choices[0].message.content}\n")
 
     return response.choices[0].message.content
 

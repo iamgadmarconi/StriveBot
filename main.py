@@ -33,6 +33,7 @@ def main():
     matches = []
 
     for job in sample_jobs:
+        # print(job)
         profiles = profile_matcher(agent, profiles, job)
         if profiles:
             profiles = profile_from_names(profiles)
@@ -51,4 +52,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    print(main())

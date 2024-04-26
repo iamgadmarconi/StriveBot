@@ -8,9 +8,12 @@ class Profile:
         self.interests = data["interests"]
         self.experience = data["experience"]
         self.skills = data["skills"]
+        self.education = data["education"]
+        self.profile = data["profile"]
+        self.certificates = data["certifications"]
 
     def __repr__(self) -> str:
-        return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience})"
+        return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience}, Education: {self.education})"
 
     def __str__(self) -> str:
         return f"""
@@ -19,6 +22,9 @@ class Profile:
                 Skills: {self.skills}
                 Experience: {self.experience}
                 Interests: {self.interests}
+                Education: {self.education}
+                Profile: {self.profile}
+                Certificates: {self.certificates}
                 """
 
 
@@ -50,11 +56,7 @@ class ProfileManager:
     def get_profiles_description(self) -> str:
         description = ""
         for profile in self.profiles:
-            description += "\n--------------------------------------------------\n"
-            description += f"**Name**: {profile.name}\n"
-            description += f"**Interests**: {profile.interests}\n"
-            description += f"**Experience**: {profile.experience}\n"
-            description += f"**Skills**: {profile.skills}\n"
+            description += str(profile) + "\n"
 
         return description
 
