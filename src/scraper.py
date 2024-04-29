@@ -308,7 +308,7 @@ class Job:
         # Extract the phone number
         phone_number = contact_div.p.get_text(strip=True)
 
-        print(f"\n\nName: {name}\nEmail: {email_address}\nPhone: {phone_number}\n\n")
+        # print(f"\n\nName: {name}\nEmail: {email_address}\nPhone: {phone_number}\n\n")
 
         return Contact(name, phone_number, email_address)
 

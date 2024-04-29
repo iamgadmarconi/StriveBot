@@ -19,7 +19,7 @@ from PyQt5.QtCore import Qt
 
 
 from src.app.worker import Worker, MatchingWorker
-from src.app.jobbox import JobDetailsDialog
+from src.app.windows import JobDetailsDialog
 from src.app.utils import CustomListWidget
 
 from src.profiles import ProfileManager
@@ -117,20 +117,20 @@ class JobApplicationGUI(QMainWindow):
     def populate_candidates_tab(self, candidates, job):
         dialog = self.get_job_dialog(job)
         if dialog:
-            dialog.candidateList.clear()
+            dialog.candidateList.clear()  # Clear existing entries
             for candidate in candidates:
-                print(f"Matched: {candidate.name} - {candidate.skills}")
-
                 item = QListWidgetItem(f"{candidate.name} - {candidate.skills}")
                 item.setData(Qt.UserRole, candidate)
                 dialog.candidateList.addItem(item)
-                print(f"Added {candidate.name} to {dialog.job.position}.")
+            # Do not show or activate the dialog here
+            print(f"Candidates updated for job {job.title} in background.")  # Optional debug
 
     def get_job_dialog(self, job):
-        # Manage or instantiate a dialog for a specific job
+        # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
             self.dialogs[job.id] = JobDetailsDialog(job)
         return self.dialogs[job.id]
+
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
@@ -201,5 +201,10 @@ class JobApplicationGUI(QMainWindow):
 
     def display_job_details(self, item):
         job = item.data(Qt.UserRole)
-        dialog = JobDetailsDialog(job)
+        
+        dialog = self.get_job_dialog(job)
+        if not dialog:
+            dialog = JobDetailsDialog(job)
+            self.dialogs[job.id] = dialog
+
         dialog.exec_()

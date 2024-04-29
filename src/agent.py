@@ -103,6 +103,7 @@ def profile_from_names(names: str) -> Profile:
 
 def get_profiles_from_match(agent: Agent, profiles: ProfileManager, job: Job) -> list[Profile]:
     names = profile_matcher(agent, profiles, job)
-    for profile in names:
+    profile_objs = profile_from_names(names)
+    for profile in profile_objs:
         profile.add_job_match(job, "")
-    return profile_from_names(names)
+    return profile_objs
