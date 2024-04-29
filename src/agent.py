@@ -100,3 +100,10 @@ def profile_from_names(names: str) -> Profile:
             profiles.append(profile)
 
     return profiles
+
+def get_profiles_from_match(agent: Agent, profiles: ProfileManager, job: Job) -> list[Profile]:
+    names = profile_matcher(agent, profiles, job)
+    if names == "NO CANDIDATES FULLFILL JOB REQUIREMENTS":
+        return []
+    
+    return profile_from_names(names)

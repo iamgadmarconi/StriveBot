@@ -137,7 +137,7 @@ class JobDetailsDialog(QDialog):
         widget = QWidget()
         layout = QVBoxLayout()
         candidateList = QListWidget()
-        for candidate in self.job._candidates:
+        for candidate in self.job.candidates:
             item = QListWidgetItem(f"{candidate.name}")
             item.setData(Qt.UserRole, candidate)
             candidateList.addItem(item)
