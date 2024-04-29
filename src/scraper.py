@@ -1,4 +1,5 @@
 import requests
+import hashlib
 
 from bs4 import BeautifulSoup
 
@@ -129,6 +130,11 @@ class Job:
         self._get_job_params()
         self._assignment = self._get_assignment_from_url()
 
+
+        m = hashlib.md5()
+        m.update(f"{self.position}{self.company}".encode())
+        self._id = str(int(m.hexdigest(), 16))[0:12]
+
     @property
     def soup(self):
         return self._soup
@@ -180,6 +186,10 @@ class Job:
     @property
     def assignment(self):
         return self._assignment
+    
+    @property
+    def id(self):
+        return self._id
 
     @url.setter
     def url(self, value):

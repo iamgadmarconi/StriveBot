@@ -9,16 +9,18 @@ class CustomListWidget(QListWidget):
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
-            # Determine the item at the click position
             item = self.itemAt(event.pos())
             if item:
-                # Calculate the checkbox area (assuming default size and padding)
-                checkbox_rect = QRect(item.boundingRect().topLeft(), QSize(20, item.boundingRect().height()))
+                # Get the rectangle of the visual part of the list item
+                item_rect = self.visualItemRect(item)
+                # Define a small rectangle at the start of the item where the checkbox is likely to be
+                checkbox_rect = QRect(item_rect.x(), item_rect.y(), 20, item_rect.height())
+                
                 if checkbox_rect.contains(event.pos()):
-                    # If clicked on the checkbox, toggle the state
+                    # Toggle the checkbox state without affecting other interactions
                     item.setCheckState(Qt.Checked if item.checkState() == Qt.Unchecked else Qt.Unchecked)
                 else:
-                    # Otherwise, emit the item clicked signal manually
+                    # If not clicking on the checkbox, allow normal item selection behavior
                     super().mousePressEvent(event)
         else:
             super().mousePressEvent(event)

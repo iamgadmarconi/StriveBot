@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 
 
-from src.app.worker import Worker
+from src.app.worker import Worker, MatchingWorker
 from src.app.jobbox import JobDetailsDialog
 from src.app.utils import CustomListWidget
 
@@ -35,6 +35,7 @@ class JobApplicationGUI(QMainWindow):
         layout = QVBoxLayout()
         self.agent = Agent()
         self.all_profiles = ProfileManager()
+        self.dialogs = {}  # Store dialogs for each job
         self.worker = None  # Attribute to hold the thread
         self.initUI(layout)
 
@@ -78,7 +79,7 @@ class JobApplicationGUI(QMainWindow):
         self.resumeButton.clicked.connect(self.resume_search)
         self.cancelButton.clicked.connect(self.cancel_search)     
 
-        self.jobList = QListWidget(self)
+        self.jobList = CustomListWidget(self)
         self.jobList.itemClicked.connect(self.display_job_details)
         self.jobList.setSelectionMode(QListWidget.MultiSelection)
         layout.addWidget(self.jobList)
@@ -103,15 +104,33 @@ class JobApplicationGUI(QMainWindow):
             QMessageBox.information(self, "No Selection", "Please select one or more jobs to export.")
 
     def matchJobs(self):
-        jobs = jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
+        jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
                 if self.jobList.item(i).checkState() == Qt.Checked]
         if jobs:
-            print("Matching jobs...")
-            for job in jobs:
-                get_profiles_from_match(self.agent, self.all_profiles, job)
-            print("Matching complete.")
+            self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs)
+            self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
+            self.matchingWorker.error.connect(self.show_error)
+            self.matchingWorker.start()
         else:
             QMessageBox.information(self, "No Selection", "Please select one or more jobs for matching.")
+
+    def populate_candidates_tab(self, candidates, job):
+        dialog = self.get_job_dialog(job)
+        if dialog:
+            dialog.candidateList.clear()
+            for candidate in candidates:
+                item = QListWidgetItem(f"{candidate.name} - {candidate.skills}")
+                item.setData(Qt.UserRole, candidate)
+                dialog.candidateList.addItem(item)
+
+    def get_job_dialog(self, job):
+        # Manage or instantiate a dialog for a specific job
+        if job.id not in self.dialogs:
+            self.dialogs[job.id] = JobDetailsDialog(job)
+        return self.dialogs[job.id]
+
+    def show_error(self, message):
+        QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
 
     def start_search(self):
         self.searchButton.setEnabled(False)
@@ -127,7 +146,7 @@ class JobApplicationGUI(QMainWindow):
         self.statusLabel.setText(f"Status: {message}")
         item = QListWidgetItem(f"{job.position} at {job.company}")
         item.setData(Qt.UserRole, job)
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         item.setCheckState(Qt.Unchecked)
         self.jobList.addItem(item)
 
@@ -178,11 +197,6 @@ class JobApplicationGUI(QMainWindow):
         self.resumeButton.setEnabled(False)
 
     def display_job_details(self, item):
-        # if not item.checkState():
-        #     # Open details dialog only if the item isn't being checked/unchecked
-        #     job = item.data(Qt.UserRole)
-        #     dialog = JobDetailsDialog(job)
-        #     dialog.exec_()
         job = item.data(Qt.UserRole)
         dialog = JobDetailsDialog(job)
         dialog.exec_()

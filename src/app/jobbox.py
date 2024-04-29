@@ -23,7 +23,12 @@ class JobDetailsDialog(QDialog):
     def __init__(self, job):
         super().__init__()
         self.job = job
+        self._id = job.id
         self.initUI()
+
+    @property
+    def id(self):
+        return self._id
 
     def initUI(self):
         self.setWindowTitle("Job Details")
@@ -134,22 +139,19 @@ class JobDetailsDialog(QDialog):
 
 
     def create_candidates_tab(self):
-        widget = QWidget()
+        self.widget = QWidget()
         layout = QVBoxLayout()
-        candidateList = QListWidget()
-        for candidate in self.job.candidates:
-            item = QListWidgetItem(f"{candidate.name}")
-            item.setData(Qt.UserRole, candidate)
-            candidateList.addItem(item)
-        candidateList.itemClicked.connect(self.display_candidate_details)
+        self.candidateList = QListWidget()
+        
+        self.candidateList.itemClicked.connect(self.display_candidate_details)
 
         # Wrap the candidate list in a scroll area
         scrollArea = QScrollArea()
         scrollArea.setWidgetResizable(True)
-        scrollArea.setWidget(candidateList)
+        scrollArea.setWidget(self.candidateList)
         layout.addWidget(scrollArea)
-        widget.setLayout(layout)
-        return widget
+        self.widget.setLayout(layout)
+        return self.widget
 
     def display_candidate_details(self, item):
         candidate = item.data(Qt.UserRole)
