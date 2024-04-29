@@ -119,9 +119,12 @@ class JobApplicationGUI(QMainWindow):
         if dialog:
             dialog.candidateList.clear()
             for candidate in candidates:
+                print(f"Matched: {candidate.name} - {candidate.skills}")
+
                 item = QListWidgetItem(f"{candidate.name} - {candidate.skills}")
                 item.setData(Qt.UserRole, candidate)
                 dialog.candidateList.addItem(item)
+                print(f"Added {candidate.name} to {dialog.job.position}.")
 
     def get_job_dialog(self, job):
         # Manage or instantiate a dialog for a specific job

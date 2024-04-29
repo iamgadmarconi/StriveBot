@@ -137,7 +137,6 @@ class JobDetailsDialog(QDialog):
         widget.setLayout(layout)
         return widget
 
-
     def create_candidates_tab(self):
         self.widget = QWidget()
         layout = QVBoxLayout()

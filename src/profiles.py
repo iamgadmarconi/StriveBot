@@ -30,6 +30,12 @@ class Profile:
     def add_job_match(self, job, motivation: str) -> None:
         self._job_matches.append((job, motivation))
 
+    def update_motivation(self, job, motivation: str) -> None:
+        for index, (job_, motivation_) in enumerate(self._job_matches):
+            if job_ == job:
+                self._job_matches[index] = (job, motivation)
+                break
+
 
 class ProfileManager:
 
