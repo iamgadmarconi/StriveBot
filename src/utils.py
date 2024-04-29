@@ -77,7 +77,6 @@ def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> d
                     max_hourly_rate:MAX HOURLY RATE
                     end_date:END DATE
                     deadline:DEADLINE
-                    submitter:SUBMITTER
 
                     IF ANY OF THE PARAMETERS ARE NOT PRESENT IN THE TEXT, LEAVE THE FIELD EMPTY.\n
 

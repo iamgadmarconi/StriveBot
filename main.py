@@ -1,3 +1,20 @@
+# import sys
+
+# from PyQt5.QtWidgets import QApplication
+# from dotenv import load_dotenv
+
+# from src.app.app import JobApplicationGUI
+
+
+# load_dotenv()
+
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     ex = JobApplicationGUI()
+#     ex.show()
+#     sys.exit(app.exec_())
+
+
 from dotenv import load_dotenv
 
 from src.profiles import ProfileManager
@@ -17,15 +34,11 @@ def main(debug=True):
     sample_job_1 = Job(
         agent,
         "https://striive.com/nl/opdrachten/ministerie-van-economische-zaken-en-klimaat-dictu/senior-citrix-beheerder/ae1b2b31-a4ca-4cd9-8e46-c494a725ac50",
-        "Senior Citrix Administrator",
-        "Ministry of Economic Affairs and Climate Policy (DICTU)",
     )
 
     sample_job_2 = Job(
         agent,
         "https://striive.com/nl/opdrachten/ministerie-van-justitie-veiligheid-jenv/software-engineer/73d85ece-68cc-42d3-bb58-924354fd9d5e",
-        "Software Engineer",
-        "Ministry of Justice and Security (JenV)",
     )
 
     if not debug:

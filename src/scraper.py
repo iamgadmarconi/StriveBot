@@ -10,6 +10,49 @@ from src.utils import (
 )
 
 
+class Contact:
+    def __init__(self, name: str, phone: str = None, email: str = None) -> None:
+        self._name = name
+        self._phone = phone
+        self._email = email
+
+    @property
+    def name(self):
+        return self._name
+    
+    @property
+    def phone(self):
+        return self._phone
+    
+    @property
+    def email(self):
+        return self._email
+    
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @phone.setter
+    def phone(self, value):
+        self._phone = value
+
+    @email.setter
+    def email(self, value):
+        self._email = value
+
+    def __repr__(self) -> str:
+        return f"Contact({self.name}, {self.phone}, {self.email})"
+    
+    def __str__(self) -> str:
+        return f"""
+                Contact Information
+                -------------------
+                Name: {self.name}
+                Phone: {self.phone}
+                Email: {self.email}
+        """
+
+
 class Assignment:
     def __init__(self, description: dict) -> None:
         self._description = description
@@ -64,23 +107,24 @@ class Assignment:
 
 
 class Job:
-    def __init__(self, agent: Agent, url: str, position: str, company: str) -> None:
+    def __init__(self, agent: Agent, url: str, position: str=None, company: str=None) -> None:
         self._agent = agent
         self._url = url
-        self.position = position
-        self.company = company
-
         self._soup = self._get_soup()
 
+
+        self.position = position
+        self.company = company
         self._commitment = None
         self._start = None
         self._location = None
         self._max_hourly_rate = None
         self._end = None
         self._deadline = None
-        self._submitter = None
 
+        self._check_complete()
         self._status = self._get_job_status()
+        self._submitter = self._get_job_submitter()
         self._candidates = []
         self._get_job_params()
         self._assignment = self._get_assignment_from_url()
@@ -166,7 +210,7 @@ class Job:
         self._deadline = value
 
     @submitter.setter
-    def submitter(self, value):
+    def submitter(self, value: Contact):
         self._submitter = value
 
     @candidates.setter
@@ -201,6 +245,22 @@ class Job:
         html_file = requests.get(self.url).text
         soup = BeautifulSoup(html_file, "html.parser")
         return soup
+    
+    def _check_complete(self) -> None:
+        if not self.position or not self.company:
+            details = self._force_complete()
+            self.position = details['position']
+            self.company = details['company']
+            
+    def _force_complete(self) -> dict[str, str]:
+        details = {}
+        container = self.soup.find('div', class_='hfp_url-segments')
+        spans = container.find_all('span')
+
+        details['company'] = spans[0].get_text(strip=True) if spans else None
+        details['position'] = spans[1].get_text(strip=True) if len(spans) > 1 else None
+
+        return details
 
     def _get_job_status(self) -> str:
         print(f"\nGetting job status for:\n{self.position} at {self.company}\n")
@@ -210,14 +270,31 @@ class Job:
             class_="hfp_button hfp-button-outline-success no-transition mb-4 d-none d-sm-block",
         )
 
-        # Find the <a> tag within that div
         try:
             a_tag = button_div.find("a")
         except AttributeError:
             a_tag = None
 
-        # Extract and return the text, if the <a> tag is found
         return a_tag.text.strip() if a_tag else None
+    
+    def _get_job_submitter(self) -> Contact:
+        print(f"\nGetting job submitter for:\n{self.position} at {self.company}\n")
+
+        submitter_block = self.soup.find("div", {"id": "hfp_recruiter-info-block"})
+
+        recruiter_info = {}
+
+        name_tag = submitter_block.find("b")
+        recruiter_info['name'] = name_tag.get_text(strip=True) if name_tag else None
+
+        email_tag = submitter_block.find("a", href=True)
+        email = email_tag['href'].replace('mailto:', '') if email_tag and 'mailto:' in email_tag['href'] else None
+        recruiter_info['email'] = email
+
+        phone_tag = submitter_block.find("p", href=True)
+        recruiter_info['phone'] = phone_tag.get_text(strip=True) if phone_tag else None
+
+        return Contact(recruiter_info["name"], recruiter_info["phone"], recruiter_info["email"])
 
     def _get_raw_job_description(self) -> str:
         print(f"\nGetting job description for:\n{self.position} at {self.company}\n")
@@ -229,11 +306,8 @@ class Job:
         return cleaned_text
 
     def _get_raw_job_params(self) -> str:
-        print(f"\nGetting raw job parameters for:\n{self.position} at {self.company}\n")
-
         info_block = self.soup.find("div", {"id": "hfp_assignment-info-block"})
 
-        # Find all 'hfp_item' divs within the 'hfp_assignment_info_block'
         hfp_items = info_block.find_all("div", class_="hfp_item")
 
         params_info = {}
@@ -244,7 +318,6 @@ class Job:
             # The value is the text of the 'b' tag
             value = item.find("b").text.strip() if item.find("b") else None
 
-            # If a key is found, add the key-value pair to the assignment_info dictionary
             if key:
                 params_info[key] = value
 
@@ -270,7 +343,6 @@ class Job:
             "max_hourly_rate": "max_hourly_rate",
             "end_date": "end",
             "deadline": "deadline",
-            "submitter": "submitter",
         }
 
         for key, value in params.items():
