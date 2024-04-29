@@ -41,12 +41,17 @@ def save_job_to_csv(job: Job, force: bool = False) -> None:
 
     file_exists = os.path.exists(file_name)
 
-    # Open the file in the appropriate mode and write headers if necessary
-    with open(file_name, "a", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file, delimiter=";", quoting=csv.QUOTE_ALL)
-        if not file_exists or force:
+    file_mode = 'w' if force or not file_exists else 'a'
+    
+    # Use newline='' to prevent Python from adding extra newlines on Windows
+    with open(file_name, file_mode, newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+        
+        # Write headers if the file does not exist or if force is True
+        if file_mode == 'w':
             writer.writerow(headers)
 
+        # Write the new job data
         writer.writerow(new_data)
 
     print(f"Data saved to '{file_name}'.")
