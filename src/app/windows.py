@@ -179,7 +179,7 @@ class JobDetailsDialog(QDialog):
         return self.widget
     
     def get_candidate_dialog(self, candidate):
-        if candidate.id not in self.dialogs:
+        if candidate.id not in self.candidate_dialogs:
             self.dialogs[candidate.id] = CandidateDetailsDialog(candidate, self.id)
         return self.candidate_dialogs[candidate.id]
 
@@ -189,7 +189,7 @@ class JobDetailsDialog(QDialog):
         dialog = self.get_candidate_dialog(candidate)
         if not dialog:
             dialog = CandidateDetailsDialog(candidate, self.id)
-            self.dialogs[candidate.id] = dialog
+            self.candidate_dialogs[candidate.id] = dialog
 
         dialog.exec_()
 
