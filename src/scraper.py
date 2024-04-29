@@ -297,19 +297,20 @@ class Job:
 
         submitter_block = self.soup.find("div", {"id": "hfp_recruiter-info-block"})
 
-        recruiter_info = {}
-
         name_tag = submitter_block.find("b")
-        recruiter_info['name'] = name_tag.get_text(strip=True) if name_tag else None
+        name = name_tag.get_text(strip=True) if name_tag else None
 
-        email_tag = submitter_block.find("a", href=True)
-        email = email_tag['href'].replace('mailto:', '') if email_tag and 'mailto:' in email_tag['href'] else None
-        recruiter_info['email'] = email
+        contact_div = submitter_block.find('div', class_='d-none d-sm-block hfp_ellipsize')
 
-        phone_tag = submitter_block.find("p", href=True)
-        recruiter_info['phone'] = phone_tag.get_text(strip=True) if phone_tag else None
+        # Extract the email address
+        email_address = contact_div.a.get_text(strip=True)
 
-        return Contact(recruiter_info["name"], recruiter_info["phone"], recruiter_info["email"])
+        # Extract the phone number
+        phone_number = contact_div.p.get_text(strip=True)
+
+        print(f"\n\nName: {name}\nEmail: {email_address}\nPhone: {phone_number}\n\n")
+
+        return Contact(name, phone_number, email_address)
 
     def _get_raw_job_description(self) -> str:
         # print(f"\nGetting job description for:\n{self.position} at {self.company}\n")

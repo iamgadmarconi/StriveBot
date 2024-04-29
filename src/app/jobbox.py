@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QTextEdit,
     QScrollArea,
+    QTextBrowser,
+    QLineEdit,
 )
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from PyQt5.QtCore import Qt
@@ -32,8 +34,8 @@ class JobDetailsDialog(QDialog):
 
     def initUI(self):
         self.setWindowTitle("Job Details")
-        self.setGeometry(100, 100, 600, 400) 
-        self.setMaximumWidth(800) # Set initial size and position
+        self.setGeometry(100, 100, 600, 400)
+        self.setMaximumWidth(800)  # Set initial size and position
 
         layout = QVBoxLayout(self)
 
@@ -48,7 +50,7 @@ class JobDetailsDialog(QDialog):
         layout.addWidget(tabWidget)
 
     def create_text_display_widget(self, text, bulleted=False):
-        """ Helper to create a text display widget that handles text wrapping. """
+        """Helper to create a text display widget that handles text wrapping."""
         textEdit = QTextEdit()
         formatted_text = format_bulleted_list(text) if bulleted else text
         textEdit.setText(formatted_text)
@@ -111,10 +113,25 @@ class JobDetailsDialog(QDialog):
         if self.job._submitter:
             grid.addWidget(QLabel("Name:"), 0, 0)
             grid.addWidget(QLabel(self.job.submitter.name), 0, 1)
-            grid.addWidget(QLabel("Email:"), 1, 0)
-            grid.addWidget(QLabel(self.job.submitter.email), 1, 1)
-            grid.addWidget(QLabel("Phone:"), 2, 0)
-            grid.addWidget(QLabel(self.job.submitter.phone), 2, 1)
+
+            email_label = QLabel("Email:")
+            grid.addWidget(email_label, 1, 0)
+
+            # Add a clickable label for email
+            email_address = QLabel('<a href="mailto:{}">{}</a>'.format(self.job.submitter.email, self.job.submitter.email))
+            email_address.setTextFormat(Qt.RichText)  # Set text format to RichText for HTML links
+            email_address.setTextInteractionFlags(Qt.TextBrowserInteraction)  # Allow label to handle links
+            email_address.setOpenExternalLinks(True)  # Enable opening links in default browser
+            grid.addWidget(email_address, 1, 1)
+
+            grid.addWidget(QLabel("Phone Number:"), 2, 0)
+            phone_number = QLabel('<a href="tel:{}">{}</a>'.format(self.job.submitter.phone, self.job.submitter.phone))
+            phone_number.setOpenExternalLinks(True)  # Enable opening links in default browser
+            phone_number.setTextInteractionFlags(Qt.TextBrowserInteraction)
+            phone_number.setOpenExternalLinks(True)
+            phone_number.setWordWrap(True)
+            grid.addWidget(phone_number, 2, 1)
+
         widget.setLayout(grid)
         return widget
 
@@ -123,16 +140,22 @@ class JobDetailsDialog(QDialog):
         layout = QVBoxLayout()
         if self.job.assignment:
 
-            layout.addWidget(QLabel('Requirements:'))
-            requirementsWidget = self.create_text_display_widget(self.job.assignment.requirements, bulleted=True)
+            layout.addWidget(QLabel("Requirements:"))
+            requirementsWidget = self.create_text_display_widget(
+                self.job.assignment.requirements, bulleted=True
+            )
             layout.addWidget(requirementsWidget)
 
-            layout.addWidget(QLabel('Skills:'))
-            skillsWidget = self.create_text_display_widget(self.job.assignment.skills, bulleted=True)
+            layout.addWidget(QLabel("Skills:"))
+            skillsWidget = self.create_text_display_widget(
+                self.job.assignment.skills, bulleted=True
+            )
             layout.addWidget(skillsWidget)
 
-            layout.addWidget(QLabel('Preferences:'))
-            preferencesWidget = self.create_text_display_widget(self.job.assignment.preferences, bulleted=True)
+            layout.addWidget(QLabel("Preferences:"))
+            preferencesWidget = self.create_text_display_widget(
+                self.job.assignment.preferences, bulleted=True
+            )
             layout.addWidget(preferencesWidget)
         widget.setLayout(layout)
         return widget
@@ -141,7 +164,7 @@ class JobDetailsDialog(QDialog):
         self.widget = QWidget()
         layout = QVBoxLayout()
         self.candidateList = QListWidget()
-        
+
         self.candidateList.itemClicked.connect(self.display_candidate_details)
 
         # Wrap the candidate list in a scroll area
