@@ -20,6 +20,10 @@ class Profile:
     @property
     def id(self) -> str:
         return self._id
+    
+    @property
+    def job_matches(self) -> list:
+        return self._job_matches
 
     def __repr__(self) -> str:
         return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience}, Education: {self.education})"
@@ -38,6 +42,13 @@ class Profile:
     
     def add_job_match(self, job, motivation: str) -> None:
         self._job_matches.append((job, motivation))
+
+    @job_matches.getter
+    def get_job_match(self, job_id) -> tuple:
+        for j, m in self._job_matches:
+            if j.id == job_id:
+                return j, m
+        return None
 
     def update_motivation(self, job, motivation: str) -> None:
         if job.id in [j.id for j, _ in self._job_matches]:

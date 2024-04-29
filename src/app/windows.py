@@ -19,6 +19,7 @@ from PyQt5.QtGui import QDesktopServices, QColor, QIcon
 from PyQt5.QtCore import QUrl
 
 from src.utils import format_bulleted_list
+from src.app.utils import CustomListWidget
 
 
 class JobDetailsDialog(QDialog):
@@ -26,6 +27,7 @@ class JobDetailsDialog(QDialog):
         super().__init__()
         self.job = job
         self._id = job.id
+        self.candidate_dialogs = {}
         self.initUI()
 
     @property
@@ -163,9 +165,10 @@ class JobDetailsDialog(QDialog):
     def create_candidates_tab(self):
         self.widget = QWidget()
         layout = QVBoxLayout()
-        self.candidateList = QListWidget()
+        self.candidateList = CustomListWidget(self)
 
         self.candidateList.itemClicked.connect(self.display_candidate_details)
+        self.candidateList.setSelectionMode(QListWidget.MultiSelection)
 
         # Wrap the candidate list in a scroll area
         scrollArea = QScrollArea()
@@ -174,10 +177,57 @@ class JobDetailsDialog(QDialog):
         layout.addWidget(scrollArea)
         self.widget.setLayout(layout)
         return self.widget
+    
+    def get_candidate_dialog(self, candidate):
+        if candidate.id not in self.dialogs:
+            self.dialogs[candidate.id] = CandidateDetailsDialog(candidate, self.id)
+        return self.candidate_dialogs[candidate.id]
 
     def display_candidate_details(self, item):
         candidate = item.data(Qt.UserRole)
-        # Display candidate details in a new dialog or update a section in this dialog
-        QMessageBox.information(
-            self, "Candidate Details", f"Name: {candidate.name}\nMore info..."
-        )
+        
+        dialog = self.get_candidate_dialog(candidate)
+        if not dialog:
+            dialog = CandidateDetailsDialog(candidate, self.id)
+            self.dialogs[candidate.id] = dialog
+
+        dialog.exec_()
+
+class CandidateDetailsDialog(QDialog):
+    def __init__(self, candidate, parent_id):
+        super().__init__()
+        self.candidate = candidate
+        self._id = candidate.id
+        self._parent_id = parent_id
+        self.initUI()
+
+    @property
+    def id(self):
+        return self._id
+
+    def initUI(self):
+        self.setWindowTitle("Candidate Details")
+        self.setGeometry(100, 100, 600, 400)
+        self.setMaximumWidth(800)  # Set initial size and position
+
+        layout = QVBoxLayout()
+
+        widget = QTabWidget()
+        widget.addTab(self.create_candidate_tab(), "Candidate")
+        widget.addTab(self.create_motivation_tab(), "Motivation")
+        self.setLayout(layout)
+    
+    def create_candidate_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(f"Name: {self.candidate.name}"))
+        return widget
+
+    def create_motivation_tab(self, parent_id):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        motivationWidget = QTextBrowser()
+        motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        layout.addWidget(motivationWidget)
+        widget.setLayout(layout)
+        return widget

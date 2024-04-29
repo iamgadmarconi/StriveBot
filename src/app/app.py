@@ -119,8 +119,10 @@ class JobApplicationGUI(QMainWindow):
         if dialog:
             dialog.candidateList.clear()  # Clear existing entries
             for candidate in candidates:
-                item = QListWidgetItem(f"{candidate.name} - {candidate.skills}")
+                item = QListWidgetItem(candidate.name)
                 item.setData(Qt.UserRole, candidate)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                item.setCheckState(Qt.Unchecked)
                 dialog.candidateList.addItem(item)
             # Do not show or activate the dialog here
             print(f"Candidates updated for job {job.position} in background.")  # Optional debug
@@ -137,7 +139,7 @@ class JobApplicationGUI(QMainWindow):
     def start_search(self):
         self.searchButton.setEnabled(False)
         self.cancelButton.setEnabled(True)
-        self.statusLabel.setText("Status: Starting search...")
+        self.statusLabel.setText("Status: Searching...")
         self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles)
         self.worker.finished.connect(self.on_search_complete)
         self.worker.update_status.connect(self.update_status)
