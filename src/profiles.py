@@ -43,7 +43,6 @@ class Profile:
     def add_job_match(self, job, motivation: str) -> None:
         self._job_matches.append((job, motivation))
 
-    @job_matches.getter
     def get_job_match(self, job_id) -> tuple:
         for j, m in self._job_matches:
             if j.id == job_id:
