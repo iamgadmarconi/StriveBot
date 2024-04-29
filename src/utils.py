@@ -23,15 +23,15 @@ def categorize_description(agent: Agent, text: str) -> dict:
 
                     Be thorough in your categorization and ensure that you capture all relevant information.\n
 
-                    FORMAT THE OUTPUT EXACTLY AS FOLLOWS:\n
-                    '
+                    FORMAT THE OUTPUT EXACTLY AS FOLLOWS:
+                    
                     REQUIREMENTS
                     REQUIREMENT 1,REQUIREMENT 2, REQUIREMENT 3, etc.
                     PREFERENCES
                     PREFERENCE 1,PREFERENCE 2, PREFERENCE 3, etc.
                     SKILLS
                     SKILL 1,SKILL 2,SKILL 3, etc.
-                    '\n
+                    
                     note that the items in each category should be separated by commas.\n
                     The text to categorize is the following:\n
                     {text}\n
@@ -50,9 +50,9 @@ def categorize_description(agent: Agent, text: str) -> dict:
 
 def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> dict:
 
-    print(
-        f"Extracting parameters from the following job description:\n{raw_description}\n"
-    )
+    # print(
+    #     f"Extracting parameters from the following job description:\n{raw_description}\n"
+    # )
 
     response = agent.client.chat.completions.create(
         model="gpt-4-turbo",
@@ -64,7 +64,8 @@ def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> d
                     The parameters to extract are the following:\n
                     Commitment (in hours per week)
                     Location (city, country)
-                    Max. Hourly rate (in EUR)
+                    Max. Hourly rate (in EUR / hour [convert if necessary])
+                    Job Start date (date, formatted as DD/MM/YYYY)
                     Job End date (date, formatted as DD/MM/YYYY)
                     Application Deadline (date, formatted as DD/MM/YYYY)
                     Job Submitter (name of the person submitting the job and contact details)\n
@@ -75,6 +76,7 @@ def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> d
                     commitment:COMMITMENT
                     location:LOCATION
                     max_hourly_rate:MAX HOURLY RATE
+                    start_date:START DATE
                     end_date:END DATE
                     deadline:DEADLINE
 
@@ -92,7 +94,7 @@ def get_parameters_from_raw_description(agent: Agent, raw_description: str) -> d
         temperature=0.1,
     )
 
-    print(f"Parameters found:\n{response.choices[0].message.content}")
+    # print(f"Parameters found:\n{response.choices[0].message.content}")
 
     return parse_parameters_to_dict(response.choices[0].message.content)
 
@@ -174,3 +176,12 @@ def pretty_print_matches(match: dict) -> None:
     -------------------
     """
     print(string)
+
+
+def format_bulleted_list(text):
+    """ Converts comma-separated text into a bulleted list formatted string. """
+    if not text:
+        return "Not specified"
+    items = text.split(", ")
+    bulleted_items = "\n".join(f"• {item}" for item in items if item.strip())
+    return bulleted_items

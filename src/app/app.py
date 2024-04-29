@@ -4,15 +4,25 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QLineEdit,
-    QTextEdit,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QListWidget,
+    QListWidgetItem,
 )
+from PyQt5.QtCore import Qt
+
+
+from src.app.worker import Worker
+from src.app.jobbox import JobDetailsDialog
 
 from src.profiles import ProfileManager
-from src.utils import Agent, pretty_print_matches
-from src.scraper import Job, get_jobs
-from src.agent import motivation_letter, profile_matcher, profile_from_names
-from src.save import save_job_to_csv
+from src.utils import Agent
+from src.scraper import Job
+
 
 
 class JobApplicationGUI(QMainWindow):
@@ -20,6 +30,7 @@ class JobApplicationGUI(QMainWindow):
         super().__init__()
         self.agent = Agent()
         self.all_profiles = ProfileManager()
+        self.worker = None  # Attribute to hold the thread
         self.initUI()
 
     def initUI(self):
@@ -27,52 +38,66 @@ class JobApplicationGUI(QMainWindow):
         self.setGeometry(100, 100, 1000, 600)
         layout = QVBoxLayout()
 
-        # Job URL input
         self.jobInput = QLineEdit(self)
-        self.jobInput.setPlaceholderText("Enter job URL or keywords...")
+        self.jobInput.setPlaceholderText("Enter job URL or keyword...")
 
-        # Search Button
         self.searchButton = QPushButton("Start Job Search", self)
         self.searchButton.clicked.connect(self.start_search)
 
-        # Results Display
-        self.resultsDisplay = QTextEdit(self)
-        self.resultsDisplay.setReadOnly(True)
+        self.statusLabel = QLabel("Status: Idle", self)  # To show current status
+        self.cancelButton = QPushButton("Cancel Search", self)
+        self.cancelButton.clicked.connect(self.cancel_search)
+        self.cancelButton.setEnabled(False)  # Disabled until a search is active
 
-        layout.addWidget(QLabel("Job URL:"))
+        self.jobList = QListWidget(self)
+        self.jobList.itemClicked.connect(self.display_job_details)
+
+        layout.addWidget(self.statusLabel)
+        layout.addWidget(self.cancelButton)
+
+        layout.addWidget(QLabel("Job URL or Keyword:"))
         layout.addWidget(self.jobInput)
         layout.addWidget(self.searchButton)
-        layout.addWidget(QLabel("Results:"))
-        layout.addWidget(self.resultsDisplay)
+        layout.addWidget(self.jobList)
 
         centralWidget = QWidget()
         centralWidget.setLayout(layout)
         self.setCentralWidget(centralWidget)
 
-    def start_single_search(self, url: str):
-        job = Job(self.agent, url)
+    def start_search(self):
+        self.searchButton.setEnabled(False)
+        self.cancelButton.setEnabled(True)
+        self.statusLabel.setText("Status: Starting search...")
+        self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles)
+        self.worker.finished.connect(self.on_search_complete)
+        self.worker.update_status.connect(self.update_status)
+        self.worker.canceled.connect(self.on_search_canceled)
+        self.worker.start()
 
-    # def start_search(self):
-    #     url = self.jobInput.text()
-    #     job = Job(self.agent, url, "Position", "Company")  # Simplified for the example
-    #     jobs = [job]  # Simulate a single job fetch
-    #     matches = []
-    #     for job in jobs:
-    #         profiles = profile_matcher(self.agent, self.all_profiles, job)
-    #         if profiles:
-    #             profile_obj = profile_from_names(profiles)
-    #             for profile in profile_obj:
-    #                 motivation = motivation_letter(self.agent, profile, job)
-    #                 job.candidates = (profile, motivation)
-    #                 profile.add_job_match(job, motivation)
-    #                 data = {
-    #                     "Position": job.position,
-    #                     "Company": job.company,
-    #                     "Candidate": profile,
-    #                     "Motivation": motivation,
-    #                 }
-    #                 self.resultsDisplay.append(pretty_print_matches(data))
-    #                 matches.append(data)
-    #                 save_job_to_csv(job, force=True)
-    #     return matches
+    def update_status(self, message: str, job: Job):
+        self.statusLabel.setText(f"Status: {message}")
+        item = QListWidgetItem(f"{job.position} at {job.company}")
+        item.setData(Qt.UserRole, job)
+        self.jobList.addItem(item)
 
+    def cancel_search(self):
+        if self.worker is not None:
+            self.worker.stop()
+            self.statusLabel.setText("Search canceled.")
+            self.searchButton.setEnabled(True)
+            self.cancelButton.setEnabled(False)
+
+    def on_search_canceled(self):
+        self.statusLabel.setText("Status: Search canceled.")
+        self.searchButton.setEnabled(True)
+        self.cancelButton.setEnabled(False)
+
+    def on_search_complete(self):
+        self.statusLabel.setText("Status: Search complete.")
+        self.searchButton.setEnabled(True)
+        self.cancelButton.setEnabled(False)
+
+    def display_job_details(self, item):
+        job = item.data(Qt.UserRole)
+        dialog = JobDetailsDialog(job)
+        dialog.exec_()

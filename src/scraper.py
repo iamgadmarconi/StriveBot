@@ -263,7 +263,7 @@ class Job:
         return details
 
     def _get_job_status(self) -> str:
-        print(f"\nGetting job status for:\n{self.position} at {self.company}\n")
+        # print(f"\nGetting job status for:\n{self.position} at {self.company}\n")
 
         button_div = self.soup.find(
             "div",
@@ -278,7 +278,7 @@ class Job:
         return a_tag.text.strip() if a_tag else None
     
     def _get_job_submitter(self) -> Contact:
-        print(f"\nGetting job submitter for:\n{self.position} at {self.company}\n")
+        # print(f"\nGetting job submitter for:\n{self.position} at {self.company}\n")
 
         submitter_block = self.soup.find("div", {"id": "hfp_recruiter-info-block"})
 
@@ -297,7 +297,7 @@ class Job:
         return Contact(recruiter_info["name"], recruiter_info["phone"], recruiter_info["email"])
 
     def _get_raw_job_description(self) -> str:
-        print(f"\nGetting job description for:\n{self.position} at {self.company}\n")
+        # print(f"\nGetting job description for:\n{self.position} at {self.company}\n")
 
         assignments = self.soup.find("div", {"id": "hfp_assignments"})
         description = assignments.find("div", class_="hfp_content").text.strip()
@@ -321,19 +321,23 @@ class Job:
             if key:
                 params_info[key] = value
 
+        # print("\n".join(
+        #     f"{key.capitalize()}: {value}" for key, value in params_info.items()
+        # ))
+
         return "\n".join(
             f"{key.capitalize()}: {value}" for key, value in params_info.items()
         )
 
     def _get_assignment_from_url(self) -> Assignment:
-        print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
+        # print(f"\nGetting assignment for:\n{self.position} at {self.company}\n")
         # print(f"\nCleaned text:\n {cleaned_text}\n")
         cleaned_text = self._get_raw_job_description()
         assignment = Assignment(categorize_description(self.agent, cleaned_text))
         return assignment
 
     def _get_job_params(self) -> dict:
-        print(f"\nGetting job parameters for:\n{self.position} at {self.company}\n")
+        # print(f"\nGetting job parameters for:\n{self.position} at {self.company}\n")
         cleaned_text = self._get_raw_job_params() + self._get_raw_job_description()
         params = get_parameters_from_raw_description(self.agent, cleaned_text)
 
@@ -341,6 +345,7 @@ class Job:
             "commitment": "commitment",
             "location": "location",
             "max_hourly_rate": "max_hourly_rate",
+            "start_date": "start",
             "end_date": "end",
             "deadline": "deadline",
         }
@@ -351,7 +356,7 @@ class Job:
                 setattr(self, attr, value)
 
 
-def get_jobs(agent, query: str = None) -> list[Job]:
+def get_jobs(agent: Agent, query: str = None):
     url = (
         f"https://striive.com/nl/opdrachten/?query={query}"
         if query
@@ -359,28 +364,20 @@ def get_jobs(agent, query: str = None) -> list[Job]:
     )
 
     html_file = requests.get(url).text
-
     soup = BeautifulSoup(html_file, "html.parser")
-
     job_cards = soup.find_all("div", class_="col-md-4")
-
-    jobs = []
 
     for card in job_cards:
         link = card.find("a", href=True)["href"] if card.find("a", href=True) else None
-        title = card.find("div", class_="hfp_card-title hfp_ellipsize").text.strip()
-        company = card.find("div", class_="hfp_card-company hfp_ellipsize").text.strip()
-
-        icon_blocks = card.find_all("div", class_="hfp_card-icons-block-item")
-
-        # Assuming the first block item is hours per week and the second is the date
-        commitment = icon_blocks[0].text.strip() if icon_blocks else None
-        start = icon_blocks[1].text.strip() if len(icon_blocks) > 1 else None
+        title = card.find("div", class_="hfp_card-title hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-title hfp_ellipsize") else "No Title"
+        company = card.find("div", class_="hfp_card-company hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-company hfp_ellipsize") else "No Company"
 
         job = Job(agent, link, title, company)
-        job.commitment = commitment
-        job.start = start
 
-        jobs.append(job)
+        yield job
 
-    return jobs
+def collect_all_jobs(agent: Agent, query=None) -> list[Job]:
+    all_jobs = []
+    for job in get_jobs(agent, query):
+        all_jobs.append(job)
+    return all_jobs
