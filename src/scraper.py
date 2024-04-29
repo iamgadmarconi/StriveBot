@@ -113,7 +113,6 @@ class Job:
         self._url = url
         self._soup = self._get_soup()
 
-
         self.position = position
         self.company = company
         self._commitment = None
@@ -129,7 +128,6 @@ class Job:
         self._candidates = []
         self._get_job_params()
         self._assignment = self._get_assignment_from_url()
-
 
         m = hashlib.md5()
         m.update(f"{self.position}{self.company}".encode())
@@ -224,7 +222,7 @@ class Job:
         self._submitter = value
 
     @candidates.setter
-    def candidates(self, value: tuple):
+    def candidates(self, value):
         self._candidates.append(value)
 
     @assignment.setter
@@ -234,6 +232,13 @@ class Job:
     @status.setter
     def status(self, value):
         self._status = value
+
+    def update_motivation(self, candidate, motivation):
+        if c.id in [c.id for c in self.candidates]:
+            for c, m in self.candidates:
+                if c.id == candidate.id:
+                    c.update_motivation(motivation)
+                    break
 
     def __repr__(self) -> str:
         return f"Job({self.position}, {self.company}, {self.description}, {self.skills}, {self.commitment}, {self.location}, {self.start})"

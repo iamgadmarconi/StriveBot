@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 
 class Profile:
@@ -11,6 +12,14 @@ class Profile:
         self.profile = data["profile"]
         self.certificates = data["certifications"]
         self._job_matches = []
+
+        m = hashlib.md5()
+        m.update(self.name.encode())
+        self._id = str(int(m.hexdigest(), 16))[0:12]
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     def __repr__(self) -> str:
         return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience}, Education: {self.education})"
@@ -31,10 +40,11 @@ class Profile:
         self._job_matches.append((job, motivation))
 
     def update_motivation(self, job, motivation: str) -> None:
-        for index, (job_, motivation_) in enumerate(self._job_matches):
-            if job_ == job:
-                self._job_matches[index] = (job, motivation)
-                break
+        if job.id in [j.id for j, _ in self._job_matches]:
+            for j, m in self._job_matches:
+                if j.id == job.id:
+                    j.update_motivation(motivation)
+                    break
 
 
 class ProfileManager:
