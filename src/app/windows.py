@@ -215,6 +215,9 @@ class CandidateDetailsDialog(QDialog):
         widget = QTabWidget()
         widget.addTab(self.create_candidate_tab(), "Candidate")
         widget.addTab(self.create_motivation_tab(self._parent_id), "Motivation")
+
+        layout.addWidget(widget)
+
         self.setLayout(layout)
     
     def create_candidate_tab(self):
