@@ -123,14 +123,13 @@ class JobApplicationGUI(QMainWindow):
                 item.setData(Qt.UserRole, candidate)
                 dialog.candidateList.addItem(item)
             # Do not show or activate the dialog here
-            print(f"Candidates updated for job {job.title} in background.")  # Optional debug
+            print(f"Candidates updated for job {job.position} in background.")  # Optional debug
 
     def get_job_dialog(self, job):
         # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
             self.dialogs[job.id] = JobDetailsDialog(job)
         return self.dialogs[job.id]
-
 
     def show_error(self, message):
         QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
