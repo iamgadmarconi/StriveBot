@@ -104,15 +104,23 @@ class JobApplicationGUI(QMainWindow):
             QMessageBox.information(self, "No Selection", "Please select one or more jobs to export.")
 
     def matchJobs(self):
+        self.matchButton.setEnabled(False)
+        self.matchButton.setText("Matching...")
         jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
                 if self.jobList.item(i).checkState() == Qt.Checked]
         if jobs:
             self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs)
             self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
+            self.matchingWorker.completed.connect(self.on_match_complete)
             self.matchingWorker.error.connect(self.show_error)
             self.matchingWorker.start()
         else:
             QMessageBox.information(self, "No Selection", "Please select one or more jobs for matching.")
+
+    def on_match_complete(self, message):
+        self.matchButton.setText("Match Candidates")
+        self.matchButton.setEnabled(True)
+        QMessageBox.information(self, "Matching Complete", message)
 
     def populate_candidates_tab(self, candidates, job):
         dialog = self.get_job_dialog(job)
@@ -130,16 +138,21 @@ class JobApplicationGUI(QMainWindow):
     def get_job_dialog(self, job):
         # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
-            self.dialogs[job.id] = JobDetailsDialog(self.agent, job)
+            self.dialogs[job.id] = JobDetailsDialog(self, job)
         return self.dialogs[job.id]
 
     def show_error(self, message):
+        self.matchButton.setText("Match Candidates")
+        self.matchButton.setEnabled(True)
         QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
 
     def start_search(self):
         self.searchButton.setEnabled(False)
         self.cancelButton.setEnabled(True)
-        self.statusLabel.setText("Status: Searching...")
+        if self.jobInput.text() == "":
+            self.statusLabel.setText("Status: Searching...")
+        else:
+            self.statusLabel.setText(f"Status: Searching with keyword '{self.jobInput.text()[:12]}...'")
         self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles)
         self.worker.finished.connect(self.on_search_complete)
         self.worker.update_status.connect(self.update_status)
@@ -147,7 +160,7 @@ class JobApplicationGUI(QMainWindow):
         self.worker.start()
 
     def update_status(self, message: str, job: Job):
-        self.statusLabel.setText(f"Status: {message}")
+        self.statusLabel.setText(f"{message}")
         item = QListWidgetItem(f"{job.position} at {job.company}")
         item.setData(Qt.UserRole, job)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
@@ -202,10 +215,10 @@ class JobApplicationGUI(QMainWindow):
 
     def display_job_details(self, item):
         job = item.data(Qt.UserRole)
-        
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_job_dialog(job)
         if not dialog:
-            dialog = JobDetailsDialog(self.agent, job)
+            dialog = JobDetailsDialog(self, job)
             self.dialogs[job.id] = dialog
 
         dialog.exec_()

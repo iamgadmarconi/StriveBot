@@ -20,13 +20,14 @@ from PyQt5.QtCore import QUrl
 
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
-from src.app.worker import MotivationWorker
+from src.app.worker import MotivationWorker, MatchingWorker
 
 
 class JobDetailsDialog(QDialog):
-    def __init__(self, agent, job):
+    def __init__(self, parent, job):
         super().__init__()
-        self.agent = agent
+        self.par = parent
+        self.agent = parent.agent
         self.job = job
         self._id = job.id
         self.candidate_dialogs = {}
@@ -178,6 +179,10 @@ class JobDetailsDialog(QDialog):
         scrollArea.setWidget(self.candidateList)
         layout.addWidget(scrollArea)
         
+        self.matchCandidatesButton = QPushButton("Match Candidates")
+        self.matchCandidatesButton.clicked.connect(self.match_candidates)
+        layout.addWidget(self.matchCandidatesButton)
+
         self.createMotivationButton = QPushButton("Create Motivation Letter")
         self.createMotivationButton.clicked.connect(self.create_motivations)
         layout.addWidget(self.createMotivationButton)
@@ -192,13 +197,32 @@ class JobDetailsDialog(QDialog):
 
     def display_candidate_details(self, item):
         candidate = item.data(Qt.UserRole)
-        
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_candidate_dialog(candidate)
         if not dialog:
             dialog = CandidateDetailsDialog(candidate, self)
             self.candidate_dialogs[candidate.id] = dialog
 
         dialog.exec_()
+
+    def match_candidates(self):
+        self.matchCandidatesButton.setEnabled(False)
+        self.matchCandidatesButton.setText("Matching Candidates...")
+        self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job])
+        self.matchingWorker.profiles_found.connect(self.par.populate_candidates_tab)
+        self.matchingWorker.completed.connect(self.on_match_complete)
+        self.matchingWorker.error.connect(self.show_error)
+        self.matchingWorker.start()
+
+    def on_match_complete(self, message):
+        self.matchCandidatesButton.setText("Match Candidates")
+        self.matchCandidatesButton.setEnabled(True)
+        QMessageBox.information(self, "Matching Complete", message)
+
+    def show_error(self, message):
+        self.matchCandidatesButton.setText("Match Candidates")
+        self.matchCandidatesButton.setEnabled(True)
+        QMessageBox.information(self, "Error", message)
 
     def create_motivations(self):
         self.createMotivationButton.setEnabled(False)
@@ -224,6 +248,8 @@ class JobDetailsDialog(QDialog):
         QMessageBox.information(self, "Success", message)
 
     def on_motivation_error(self, message):
+        self.createMotivationButton.setText("Create Motivation Letter")
+        self.createMotivationButton.setEnabled(True)
         QMessageBox.information(self, "Error", message)
 
 class CandidateDetailsDialog(QDialog):

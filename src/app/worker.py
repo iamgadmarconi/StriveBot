@@ -60,6 +60,7 @@ class Worker(QThread):
 
 class MatchingWorker(QThread):
     profiles_found = pyqtSignal(list, object)
+    completed = pyqtSignal(str)
     error = pyqtSignal(str)
 
     def __init__(self, agent, profiles, jobs):
@@ -75,6 +76,7 @@ class MatchingWorker(QThread):
                 candidates = get_profiles_from_match(self.agent, self.profiles, job)
                 self.profiles_found.emit(candidates, job)
                 print(f"Found {len(candidates)} candidates for {job.position} at {job.company}")
+            self.completed.emit("Success: Matching completed.")
         except Exception as e:
             self.error.emit(str(e))
 

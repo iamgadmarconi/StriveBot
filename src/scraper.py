@@ -304,11 +304,15 @@ class Job:
         contact_div = submitter_block.find('div', class_='d-none d-sm-block hfp_ellipsize')
 
         # Extract the email address
-        email_address = contact_div.a.get_text(strip=True)
-
+        try:
+            email_address = contact_div.a.get_text(strip=True)
+        except AttributeError:
+            email_address = "No email address found"
         # Extract the phone number
-        phone_number = contact_div.p.get_text(strip=True)
-
+        try:
+            phone_number = contact_div.p.get_text(strip=True)
+        except AttributeError:
+            phone_number = "No phone number found"
         # print(f"\n\nName: {name}\nEmail: {email_address}\nPhone: {phone_number}\n\n")
 
         return Contact(name, phone_number, email_address)
@@ -375,7 +379,7 @@ class Job:
 
 def get_jobs(agent: Agent, query: str = None):
     url = (
-        f"https://striive.com/nl/opdrachten/?query={query}"
+        f"https://striive.com/nl/opdrachten/?query={query.replace(' ', '%20')}"
         if query
         else "https://striive.com/nl/opdrachten/"
     )
