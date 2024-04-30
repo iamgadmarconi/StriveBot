@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 
 class Profile:
@@ -11,6 +12,18 @@ class Profile:
         self.profile = data["profile"]
         self.certificates = data["certifications"]
         self._job_matches = []
+
+        m = hashlib.md5()
+        m.update(self.name.encode())
+        self._id = str(int(m.hexdigest(), 16))[0:12]
+
+    @property
+    def id(self) -> str:
+        return self._id
+    
+    @property
+    def job_matches(self) -> list:
+        return self._job_matches
 
     def __repr__(self) -> str:
         return f"Profile(Name: {self.name}, Profile: {self.interests}, Skills: {self.skills}, Experience: {self.experience}, Education: {self.education})"
@@ -29,6 +42,19 @@ class Profile:
     
     def add_job_match(self, job, motivation: str) -> None:
         self._job_matches.append((job, motivation))
+
+    def get_job_match(self, job_id) -> tuple:
+        for j, m in self._job_matches:
+            if j.id == job_id:
+                return j, m
+        return None
+
+    def update_motivation(self, job, new_motivation):
+            # Update motivation in the Candidate's job_matches list
+            for index, (j, m) in enumerate(self.job_matches):
+                if j.id == job.id:
+                    self.job_matches[index] = (j, new_motivation)  # Update the tuple in the list
+                    break
 
 
 class ProfileManager:
