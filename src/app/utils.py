@@ -14,21 +14,20 @@ class CustomListWidget(QListWidget):
             if item:
                 item_rect = self.visualItemRect(item)
                 checkbox_rect = QRect(item_rect.x(), item_rect.y(), 20, item_rect.height())
-
+                
                 if checkbox_rect.contains(event.pos()):
-                    # Toggling the checkbox state
-                    item.setCheckState(Qt.Checked if item.checkState() == Qt.Unchecked else Qt.Unchecked)
+                    # Temporarily block signal to avoid side-effects
+                    self.blockSignals(True)
+                    checked_state = Qt.Checked if item.checkState() == Qt.Unchecked else Qt.Unchecked
+                    item.setCheckState(checked_state)
+                    self.blockSignals(False)
                     
-                    # Prevent the event from propagating to avoid unwanted behavior
-                    event.accept()
+                    event.accept()  # Ensure event does not propagate
                 else:
-                    # For clicks outside the checkbox area, allow normal behavior
                     super().mousePressEvent(event)
             else:
-                # Clicks not on items should also behave normally
                 super().mousePressEvent(event)
         else:
-            # Handle other mouse buttons normally
             super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
