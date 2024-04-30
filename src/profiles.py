@@ -49,11 +49,11 @@ class Profile:
                 return j, m
         return None
 
-    def update_motivation(self, job, motivation: str) -> None:
-        if job.id in [j.id for j, _ in self._job_matches]:
-            for j, m in self._job_matches:
+    def update_motivation(self, job, new_motivation):
+            # Update motivation in the Candidate's job_matches list
+            for index, (j, m) in enumerate(self.job_matches):
                 if j.id == job.id:
-                    j.update_motivation(motivation)
+                    self.job_matches[index] = (j, new_motivation)  # Update the tuple in the list
                     break
 
 

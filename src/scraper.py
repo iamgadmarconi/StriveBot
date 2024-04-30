@@ -233,11 +233,12 @@ class Job:
     def status(self, value):
         self._status = value
 
-    def update_motivation(self, candidate, motivation):
-        if c.id in [c.id for c in self.candidates]:
-            for c, m in self.candidates:
+    def update_motivation(self, candidate, new_motivation):
+            # Update motivation in the Job's candidates list
+            for index, (c, m) in enumerate(self.candidates):
                 if c.id == candidate.id:
-                    c.update_motivation(motivation)
+                    self.candidates[index] = (c, new_motivation)  # Update the tuple in the list
+                    c.update_motivation(self, new_motivation)  # Call candidate's method to update its list
                     break
 
     def __repr__(self) -> str:

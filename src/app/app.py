@@ -98,7 +98,7 @@ class JobApplicationGUI(QMainWindow):
                 if self.jobList.item(i).checkState() == Qt.Checked]
         if jobs:
             for job in jobs:
-                save_job_to_csv(job)  # Assuming this function exists
+                save_job_to_csv(job) 
             QMessageBox.information(self, "Export Complete", "Selected jobs have been exported to CSV.")
         else:
             QMessageBox.information(self, "No Selection", "Please select one or more jobs to export.")
@@ -130,7 +130,7 @@ class JobApplicationGUI(QMainWindow):
     def get_job_dialog(self, job):
         # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
-            self.dialogs[job.id] = JobDetailsDialog(job)
+            self.dialogs[job.id] = JobDetailsDialog(self.agent, job)
         return self.dialogs[job.id]
 
     def show_error(self, message):
@@ -205,7 +205,7 @@ class JobApplicationGUI(QMainWindow):
         
         dialog = self.get_job_dialog(job)
         if not dialog:
-            dialog = JobDetailsDialog(job)
+            dialog = JobDetailsDialog(self.agent, job)
             self.dialogs[job.id] = dialog
 
         dialog.exec_()

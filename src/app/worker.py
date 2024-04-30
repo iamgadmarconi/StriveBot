@@ -1,12 +1,12 @@
 import re
 import traceback
 
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from threading import Event
 
 
 from src.scraper import get_jobs, Job
-from src.agent import get_profiles_from_match
+from src.agent import get_profiles_from_match, motivation_letter
 
 
 class Worker(QThread):
@@ -77,3 +77,28 @@ class MatchingWorker(QThread):
                 print(f"Found {len(candidates)} candidates for {job.position} at {job.company}")
         except Exception as e:
             self.error.emit(str(e))
+
+
+class MotivationWorker(QThread):
+    completed = pyqtSignal(str)  # Signal to indicate completion with a message
+    error = pyqtSignal(str)  # Signal to indicate an error with a message
+
+    def __init__(self, agent, job, candidates):
+        super().__init__()
+        self.agent = agent
+        self.job = job
+        self.candidates = candidates
+
+    def run(self):
+        try:
+            if not self.candidates:
+                self.error.emit("No Selection: Please select one or more candidates to create motivation letters.")
+                return
+
+            for candidate in self.candidates:
+                new_motivation = motivation_letter(self.agent, candidate, self.job)
+                candidate.update_motivation(self.job, new_motivation)
+
+            self.completed.emit("Success: Motivation letters created successfully.")
+        except Exception as e:
+            self.error.emit(f"Error: {str(e)}")

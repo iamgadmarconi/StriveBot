@@ -20,11 +20,13 @@ from PyQt5.QtCore import QUrl
 
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
+from src.app.worker import MotivationWorker
 
 
 class JobDetailsDialog(QDialog):
-    def __init__(self, job):
+    def __init__(self, agent, job):
         super().__init__()
+        self.agent = agent
         self.job = job
         self._id = job.id
         self.candidate_dialogs = {}
@@ -175,12 +177,17 @@ class JobDetailsDialog(QDialog):
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(self.candidateList)
         layout.addWidget(scrollArea)
+        
+        createMotivationButton = QPushButton("Create Motivation Letter")
+        createMotivationButton.clicked.connect(self.create_motivations)
+        layout.addWidget(createMotivationButton)
+
         self.widget.setLayout(layout)
         return self.widget
     
     def get_candidate_dialog(self, candidate):
         if candidate.id not in self.candidate_dialogs:
-            self.candidate_dialogs[candidate.id] = CandidateDetailsDialog(candidate, self.id)
+            self.candidate_dialogs[candidate.id] = CandidateDetailsDialog(candidate, self)
         return self.candidate_dialogs[candidate.id]
 
     def display_candidate_details(self, item):
@@ -188,22 +195,64 @@ class JobDetailsDialog(QDialog):
         
         dialog = self.get_candidate_dialog(candidate)
         if not dialog:
-            dialog = CandidateDetailsDialog(candidate, self.id)
+            dialog = CandidateDetailsDialog(candidate, self)
             self.candidate_dialogs[candidate.id] = dialog
 
         dialog.exec_()
 
+    def create_motivations(self):
+        candidates = [self.candidateList.item(i).data(Qt.UserRole) for i in range(self.candidateList.count())
+                        if self.candidateList.item(i).checkState() == Qt.Checked]
+        
+        self.motivationWorker = MotivationWorker(self.agent, self.job, candidates)
+        self.motivationWorker.completed.connect(self.on_motivation_completed)
+        self.motivationWorker.error.connect(self.on_motivation_error)
+        self.motivationWorker.start()
+
+    def on_motivation_completed(self, message):
+        candidates = [self.candidateList.item(i).data(Qt.UserRole) for i in range(self.candidateList.count())]
+        # self.populate_motivations_tab(candidates)
+        for candidate in candidates:
+            dialog = self.get_candidate_dialog(candidate)
+            if dialog:
+                dialog.motivationWidget.setText(candidate.get_job_match(self._id)[1])
+
+        QMessageBox.information(self, "Success", message)
+
+    def on_motivation_error(self, message):
+        QMessageBox.information(self, "Error", message)
+
+    def populate_motivations_tab(self, candidates):
+        for candidate in candidates:
+            dialog = self.get_candidate_dialog(candidates)
+            if dialog:
+                dialog.candidateList.clear()
+
+
+            # Do not show or activate the dialog here
+            print(f"Motivation updated for candidate {candidate.name} in background.")  # Optional debug
+
+
 class CandidateDetailsDialog(QDialog):
-    def __init__(self, candidate, parent_id):
+    def __init__(self, candidate, parent: JobDetailsDialog):
         super().__init__()
         self.candidate = candidate
         self._id = candidate.id
-        self._parent_id = parent_id
+        self._parent = parent
+        self._parent_id = parent.id
         self.initUI()
 
     @property
     def id(self):
         return self._id
+    
+    @property
+    def parent(self):
+        return self._parent
+    
+    @property
+    def parent_id(self):
+        return self._parent_id
 
     def initUI(self):
         self.setWindowTitle("Candidate Details")
@@ -229,8 +278,30 @@ class CandidateDetailsDialog(QDialog):
     def create_motivation_tab(self, parent_id):
         widget = QWidget()
         layout = QVBoxLayout()
-        motivationWidget = QTextBrowser()
-        motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
-        layout.addWidget(motivationWidget)
+        self.motivationWidget = QTextBrowser()
+        self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        layout.addWidget(self.motivationWidget)
+
+        createMotivationButton = QPushButton("Create Motivation Letter")
+        createMotivationButton.clicked.connect(self.create_motivation)
+        layout.addWidget(createMotivationButton)
+
         widget.setLayout(layout)
         return widget
+    
+    def create_motivation(self):
+        candidates = [self.candidate]
+        
+        self.motivationWorker = MotivationWorker(self.parent.agent, self.parent.job, candidates)
+        self.motivationWorker.completed.connect(self.on_motivation_completed)
+        self.motivationWorker.error.connect(self.on_motivation_error)
+        self.motivationWorker.start()
+
+    def on_motivation_completed(self, message):
+        motivation = self.candidate.get_job_match(self.parent_id)[1]
+        self.motivationWidget.setText(motivation)
+        QMessageBox.information(self, "Success", message)
+
+    def on_motivation_error(self, message):
+        QMessageBox.information(self, "Error", message)
+
