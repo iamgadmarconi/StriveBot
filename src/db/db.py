@@ -1,11 +1,10 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, create_engine, Table
+from sqlalchemy import Column, String, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 from src.scraper import Job, Contact, Assignment
 
 Base = declarative_base()
-
 
 
 class JobCandidateAssociation(Base):
@@ -116,44 +115,46 @@ class JobDAO:
         self.session = Session()
 
     def add_job(self, job: Job):
-        # Check if the submitter exists and link it, otherwise, create a new ContactModel
-        contact = self.session.query(ContactModel).filter_by(email=job.submitter.email).first() if job.submitter else None
-        if not contact and job.submitter:
-            # If there's a submitter detail but no matching contact in the database, create a new one
-            contact = ContactModel(id=job.submitter.id, name=job.submitter.name, email=job.submitter.email, phone=job.submitter.phone)
-            self.session.add(contact)  # This line is optional as adding job_model will cascade and add the contact
-        
-        assignment = self.session.query(AssignmentModel).filter_by(id=job.assignment.id).first() if job.assignment else None
-        if not assignment and job.assignment:
-            assignment = AssignmentModel(id=job.assignment.id, skills=job.assignment.skills, requirements=job.assignment.requirements, preferences=job.assignment.preferences)
-            self.session.add(assignment)
+        job_model = self.session.query(JobModel).filter_by(id=job.id).first()
+        if not job_model:
+            # Check if the submitter exists and link it, otherwise, create a new ContactModel
+            contact = self.session.query(ContactModel).filter_by(email=job.submitter.email).first() if job.submitter else None
+            if not contact and job.submitter:
+                # If there's a submitter detail but no matching contact in the database, create a new one
+                contact = ContactModel(id=job.submitter.id, name=job.submitter.name, email=job.submitter.email, phone=job.submitter.phone)
+                self.session.add(contact)  # This line is optional as adding job_model will cascade and add the contact
+            
+            assignment = self.session.query(AssignmentModel).filter_by(id=job.assignment.id).first() if job.assignment else None
+            if not assignment and job.assignment:
+                assignment = AssignmentModel(id=job.assignment.id, skills=job.assignment.skills, requirements=job.assignment.requirements, preferences=job.assignment.preferences)
+                self.session.add(assignment)
 
-        candidates = []
-        for candidate in job.candidates:
-            candidate_model = self.session.query(CandidateModel).filter_by(id=candidate.id).first()
-            if not candidate_model:
-                candidate_model = CandidateModel(id=candidate.id, name=candidate.name, interests=candidate.interests, experience=candidate.experience, skills=candidate.skills, education=candidate.education, profile=candidate.profile, certificates=candidate.certificates)
-                self.session.add(candidate_model)
-            candidates.append(candidate_model)
+            candidates = []
+            for candidate in job.candidates:
+                candidate_model = self.session.query(CandidateModel).filter_by(id=candidate.id).first()
+                if not candidate_model:
+                    candidate_model = CandidateModel(id=candidate.id, name=candidate.name, interests=candidate.interests, experience=candidate.experience, skills=candidate.skills, education=candidate.education, profile=candidate.profile, certificates=candidate.certificates)
+                    self.session.add(candidate_model)
+                candidates.append(candidate_model)
 
-        job_model = JobModel(
-            id=job.id,
-            url=job.url,
-            position=job.position,
-            company=job.company,
-            commitment=job.commitment,
-            start_date=job.start,
-            location=job.location,
-            max_hourly_rate=job.max_hourly_rate,
-            end_date=job.end,
-            deadline=job.deadline,
-            status=job.status,
-            submitter=contact,  # Link the contact model directly
-            assignment=assignment,
-            candidates=candidates,
-        )
-        self.session.add(job_model)
-        self.session.commit()
+            job_model = JobModel(
+                id=job.id,
+                url=job.url,
+                position=job.position,
+                company=job.company,
+                commitment=job.commitment,
+                start_date=job.start,
+                location=job.location,
+                max_hourly_rate=job.max_hourly_rate,
+                end_date=job.end,
+                deadline=job.deadline,
+                status=job.status,
+                submitter=contact,  # Link the contact model directly
+                assignment=assignment,
+                candidates=candidates,
+            )
+            self.session.add(job_model)
+            self.session.commit()
 
     def update_job(self, job: Job):
         job_model = self.session.query(JobModel).filter_by(id=job.id).first()
@@ -217,9 +218,13 @@ class CandidateDAO:
         self.session = Session()
 
     def add_candidate(self, candidate):
-        candidate_model = CandidateModel(id=candidate.id, name=candidate.name, interests=candidate.interests, experience=candidate.experience, skills=candidate.skills, education=candidate.education, profile=candidate.profile, certificates=candidate.certificates)
-        self.session.add(candidate_model)
-        self.session.commit()
+        candidate_model = self.session.query(CandidateModel).filter_by(id=candidate.id).first()
+        if not candidate_model:
+            candidate_model = CandidateModel(id=candidate.id, name=candidate.name, interests=candidate.interests, experience=candidate.experience, skills=candidate.skills, education=candidate.education, profile=candidate.profile, certificates=candidate.certificates)
+            self.session.add(candidate_model)
+            self.session.commit()
+        else:
+            self.update_candidate(candidate)
 
     def update_candidate(self, candidate):
         candidate_model = self.session.query(CandidateModel).filter_by(id=candidate.id).first()
@@ -247,17 +252,21 @@ class CandidateDAO:
     
 
 class MotivationDAO:
-    def __init__(self, session):
-        self.session = session
+    def __init__(self):
+        self.session = Session()
 
     def add_motivation(self, job_id, candidate_id, motivation_text):
-        association = JobCandidateAssociation(
-            job_id=job_id,
-            candidate_id=candidate_id,
-            motivation=motivation_text
-        )
-        self.session.add(association)
-        self.session.commit()
+        motivation_model = self.session.query(JobCandidateAssociation).filter_by(job_id=job_id, candidate_id=candidate_id).first()
+        if motivation_model:
+            self.update_motivation(job_id, candidate_id, motivation_text)
+        else:
+            association = JobCandidateAssociation(
+                job_id=job_id,
+                candidate_id=candidate_id,
+                motivation=motivation_text
+            )
+            self.session.add(association)
+            self.session.commit()
 
     def update_motivation(self, job_id, candidate_id, new_motivation_text):
         association = self.session.query(JobCandidateAssociation).filter_by(
