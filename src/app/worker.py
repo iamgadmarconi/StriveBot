@@ -6,6 +6,7 @@ from threading import Event
 
 
 from src.scraper import get_jobs, Job
+from src.profiles import Motivation, Profile
 from src.agent import get_profiles_from_match, motivation_letter
 
 
@@ -85,7 +86,7 @@ class MotivationWorker(QThread):
     completed = pyqtSignal(str)  # Signal to indicate completion with a message
     error = pyqtSignal(str)  # Signal to indicate an error with a message
 
-    def __init__(self, agent, job, candidates):
+    def __init__(self, agent, job, candidates: list[Profile]):
         super().__init__()
         self.agent = agent
         self.job = job
@@ -99,7 +100,8 @@ class MotivationWorker(QThread):
 
             for candidate in self.candidates:
                 new_motivation = motivation_letter(self.agent, candidate, self.job)
-                candidate.update_motivation(self.job, new_motivation)
+                motivation_obj = Motivation(self.job, new_motivation)
+                candidate.update_motivation(motivation_obj)
 
             self.completed.emit("Success: Motivation letters created successfully.")
         except Exception as e:

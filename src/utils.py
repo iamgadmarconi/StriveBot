@@ -1,4 +1,5 @@
 import os
+import hashlib
 from openai import OpenAI
 
 
@@ -185,3 +186,9 @@ def format_bulleted_list(text):
     items = text.split(", ")
     bulleted_items = "\n".join(f"• {item}" for item in items if item.strip())
     return bulleted_items
+
+
+def get_id_from_name(name: str) -> str:
+    m = hashlib.md5()
+    m.update(name.encode("utf-8"))
+    return str(int(m.hexdigest(), 16))[0:12]

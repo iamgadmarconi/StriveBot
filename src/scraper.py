@@ -8,6 +8,7 @@ from src.utils import (
     clean_text,
     categorize_description,
     get_parameters_from_raw_description,
+    get_id_from_name,
 )
 
 
@@ -16,6 +17,7 @@ class Contact:
         self._name = name
         self._phone = phone
         self._email = email
+        self._id = get_id_from_name(name)
 
     @property
     def name(self):
@@ -29,6 +31,10 @@ class Contact:
     def email(self):
         return self._email
     
+    @property
+    def id(self):
+        return self._id
+
     @name.setter
     def name(self, value):
         self._name = value
@@ -60,6 +66,7 @@ class Assignment:
         self._skills = self._description.get("SKILLS")
         self._requirements = self._description.get("REQUIREMENTS")
         self._preferences = self._description.get("PREFERENCES")
+        self._id = get_id_from_name(f"{self.requirements[:4]}{self.preferences[:4]}{self.skills[:4]}")
 
     @property
     def description(self):
@@ -76,6 +83,10 @@ class Assignment:
     @property
     def preferences(self):
         return self._preferences
+    
+    @property
+    def id(self):
+        return self._id
 
     @description.setter
     def description(self, value):
@@ -128,10 +139,7 @@ class Job:
         self._candidates = []
         self._get_job_params()
         self._assignment = self._get_assignment_from_url()
-
-        m = hashlib.md5()
-        m.update(f"{self.position}{self.company}".encode())
-        self._id = str(int(m.hexdigest(), 16))[0:12]
+        self._id = get_id_from_name(f"{self.position}{self.company}")
 
     @property
     def soup(self):
@@ -238,7 +246,7 @@ class Job:
             for index, (c, m) in enumerate(self.candidates):
                 if c.id == candidate.id:
                     self.candidates[index] = (c, new_motivation)  # Update the tuple in the list
-                    c.update_motivation(self, new_motivation)  # Call candidate's method to update its list
+                    c.update_motivation(new_motivation)  # Call candidate's method to update its list
                     break
 
     def __repr__(self) -> str:
