@@ -97,10 +97,10 @@ class JobModel(Base):
     position = Column(String)
     company = Column(String)
     commitment = Column(String)
-    start_date = Column(String)
+    start = Column(String)
     location = Column(String)
     max_hourly_rate = Column(String)
-    end_date = Column(String)
+    end = Column(String)
     deadline = Column(String)
     status = Column(String)
     contact_id = Column(String, ForeignKey('contacts.id'))  # Match the data type of ContactModel.id
@@ -142,11 +142,11 @@ class JobDAO:
                 url=job.url,
                 position=job.position,
                 company=job.company,
-                commitment=job.commitment,
-                start_date=job.start,
+                commitment=job._commitment,
+                start=job.start,
                 location=job.location,
                 max_hourly_rate=job.max_hourly_rate,
-                end_date=job.end,
+                end=job.end,
                 deadline=job.deadline,
                 status=job.status,
                 submitter=contact,  # Link the contact model directly
@@ -200,6 +200,9 @@ class JobDAO:
         if job_model:
             self.session.delete(job_model)
             self.session.commit()
+
+    def list_all_jobs(self):
+        return self.session.query(JobModel).all()
 
 class CandidateModel(Base):
     __tablename__ = 'candidates'
@@ -291,7 +294,7 @@ class MotivationDAO:
 
 
 # Set up the engine and session
-engine = create_engine(r'sqlite:///C:\Users\Gad Marconi\Documents\Projects\StriveBot\src\_data\jobs.db')
+engine = create_engine(r'sqlite:///src\db\_data\jobs.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 

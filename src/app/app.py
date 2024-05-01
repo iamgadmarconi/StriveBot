@@ -27,6 +27,7 @@ from src.utils import Agent
 from src.scraper import Job
 from src.save import save_job_to_csv
 from src.agent import get_profiles_from_match
+from src.db.db import JobDAO, CandidateDAO, MotivationDAO
 
 
 class JobApplicationGUI(QMainWindow):
@@ -34,6 +35,7 @@ class JobApplicationGUI(QMainWindow):
         super().__init__()
         layout = QVBoxLayout()
         self.agent = Agent()
+        self.jobdao = JobDAO()
         self.all_profiles = ProfileManager()
         self.dialogs = {}  # Store dialogs for each job
         self.worker = None  # Attribute to hold the thread
@@ -83,6 +85,8 @@ class JobApplicationGUI(QMainWindow):
         self.jobList.itemClicked.connect(self.display_job_details)
         self.jobList.setSelectionMode(QListWidget.MultiSelection)
         layout.addWidget(self.jobList)
+        # Load jobs from the database
+        self.load_jobs()
 
         self.exportButton = QPushButton("Export to CSV", self)
         self.matchButton = QPushButton("Match Candidates", self)
@@ -153,7 +157,7 @@ class JobApplicationGUI(QMainWindow):
             self.statusLabel.setText("Status: Searching...")
         else:
             self.statusLabel.setText(f"Status: Searching with keyword '{self.jobInput.text()[:12]}...'")
-        self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles)
+        self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles, self.jobdao)
         self.worker.finished.connect(self.on_search_complete)
         self.worker.update_status.connect(self.update_status)
         self.worker.canceled.connect(self.on_search_canceled)
@@ -222,3 +226,18 @@ class JobApplicationGUI(QMainWindow):
             self.dialogs[job.id] = dialog
 
         dialog.exec_()
+
+    def load_jobs(self):
+        try:
+            jobs = self.jobdao.list_all_jobs()  # Assuming you have a method in JobDAO to fetch all jobs
+            for job in jobs:
+                self.add_job_to_list(job)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load jobs from database:\n{str(e)}")
+
+    def add_job_to_list(self, job):
+        item = QListWidgetItem(f"{job.position} at {job.company}")
+        item.setData(Qt.UserRole, job)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setCheckState(Qt.Unchecked)
+        self.jobList.addItem(item)

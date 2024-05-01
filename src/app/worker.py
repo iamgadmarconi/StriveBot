@@ -8,6 +8,7 @@ from threading import Event
 from src.scraper import get_jobs, Job
 from src.profiles import Motivation, Profile
 from src.agent import get_profiles_from_match, motivation_letter
+from src.db.db import JobDAO, CandidateDAO, MotivationDAO
 
 
 class Worker(QThread):
@@ -16,11 +17,12 @@ class Worker(QThread):
     paused = pyqtSignal(bool)
     canceled = pyqtSignal()  # Define the canceled signal
 
-    def __init__(self, agent, input_text, all_profiles):
+    def __init__(self, agent, input_text, all_profiles, dao: JobDAO):
         super().__init__()
         self.agent = agent
         self.input_text = input_text
         self.all_profiles = all_profiles
+        self.dao = dao # Inject the JobDAO
         self._is_running = True
         self._pause_event = Event()
         self._pause_event.set()  # Start unpaused
@@ -29,6 +31,7 @@ class Worker(QThread):
         if re.match(r'https?://', self.input_text):
             # Input is a URL, process as a single job directly
             job = Job(self.agent, url=self.input_text)  # Assuming the Job constructor can handle URL directly
+            self.dao.add_job(job)
             self.update_status.emit(f'Found: {job.position} at {job.company}', job)
             self.finished.emit([job])  # Emit the single job in a list
 
@@ -37,6 +40,7 @@ class Worker(QThread):
             jobs_generator = get_jobs(self.agent, self.input_text)
             for job in jobs_generator:
                 self._pause_event.wait()
+                self.dao.add_job(job)
                 if not self._is_running:
                     self.canceled.emit()
                     return

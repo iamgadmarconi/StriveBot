@@ -88,7 +88,7 @@ class JobDetailsDialog(QDialog):
         # Status with colored icon
         status_label = QLabel("Status:")
         status_icon = QLabel()
-        if self.job._status == "Open":
+        if self.job.status == "Open":
             status_icon.setPixmap(QIcon(r"src\app\static\button.png").pixmap(15, 15))
         else:
             status_icon.setPixmap(QIcon(r"src\app\static\cross.png").pixmap(15, 15))
@@ -115,7 +115,7 @@ class JobDetailsDialog(QDialog):
     def create_contact_tab(self):
         widget = QWidget()
         grid = QGridLayout()
-        if self.job._submitter:
+        if self.job.submitter:
             grid.addWidget(QLabel("Name:"), 0, 0)
             grid.addWidget(QLabel(self.job.submitter.name), 0, 1)
 
