@@ -14,15 +14,12 @@ class CustomListWidget(QListWidget):
             if item:
                 item_rect = self.visualItemRect(item)
                 checkbox_rect = QRect(item_rect.x(), item_rect.y(), 20, item_rect.height())
-                
                 if checkbox_rect.contains(event.pos()):
-                    # Temporarily block signal to avoid side-effects
+                    # Block signal to avoid any unwanted dialog or state changes
                     self.blockSignals(True)
-                    checked_state = Qt.Checked if item.checkState() == Qt.Unchecked else Qt.Unchecked
-                    item.setCheckState(checked_state)
+                    item.setCheckState(Qt.Checked if item.checkState() == Qt.Unchecked else Qt.Unchecked)
                     self.blockSignals(False)
-                    
-                    event.accept()  # Ensure event does not propagate
+                    event.accept()  # Consume the event to prevent further processing
                 else:
                     super().mousePressEvent(event)
             else:

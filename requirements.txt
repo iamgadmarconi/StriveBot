@@ -3,3 +3,4 @@ openai==1.23.2
 python-dotenv==1.0.1
 pandas==2.2.2
 PyQt5==5.15.10
+sqlalchemy==2.0.29
