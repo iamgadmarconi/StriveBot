@@ -27,7 +27,7 @@ from src.utils import Agent
 from src.scraper import Job
 from src.save import save_job_to_csv
 from src.agent import get_profiles_from_match
-from src.db.db import JobDAO, CandidateDAO, MotivationDAO
+from src.db.db import JobDAO, CandidateDAO, MatchDAO
 
 
 class JobApplicationGUI(QMainWindow):
@@ -36,7 +36,12 @@ class JobApplicationGUI(QMainWindow):
         layout = QVBoxLayout()
         self.agent = Agent()
         self.jobdao = JobDAO()
+        self.candidatedao = CandidateDAO()
+        self.matchdao = MatchDAO()
         self.all_profiles = ProfileManager()
+        for candidate in self.all_profiles.profiles:
+            self.candidatedao.add_candidate(candidate)
+
         self.dialogs = {}  # Store dialogs for each job
         self.worker = None  # Attribute to hold the thread
         self.initUI(layout)
@@ -113,7 +118,7 @@ class JobApplicationGUI(QMainWindow):
         jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
                 if self.jobList.item(i).checkState() == Qt.Checked]
         if jobs:
-            self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs)
+            self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs, self.jobdao, self.matchdao)
             self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
             self.matchingWorker.completed.connect(self.on_match_complete)
             self.matchingWorker.error.connect(self.show_error)
@@ -140,9 +145,8 @@ class JobApplicationGUI(QMainWindow):
             print(f"Candidates updated for job {job.position} in background.")  # Optional debug
 
     def get_job_dialog(self, job):
-        # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
-            self.dialogs[job.id] = JobDetailsDialog(self, job)
+            self.dialogs[job.id] = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
         return self.dialogs[job.id]
 
     def show_error(self, message):
@@ -179,15 +183,14 @@ class JobApplicationGUI(QMainWindow):
             self.cancelButton.setEnabled(False)
 
     def on_paused(self, is_paused):
-            # Slot to update the GUI when paused/resumed
-            if is_paused:
-                self.statusLabel.setText('Status: Paused.')
-                self.pauseButton.setEnabled(False)
-                self.resumeButton.setEnabled(True)
-            else:
-                self.statusLabel.setText('Status: Running...')
-                self.pauseButton.setEnabled(True)
-                self.resumeButton.setEnabled(False)
+        if is_paused:
+            self.statusLabel.setText('Status: Paused.')
+            self.pauseButton.setEnabled(False)
+            self.resumeButton.setEnabled(True)
+        else:
+            self.statusLabel.setText('Status: Running...')
+            self.pauseButton.setEnabled(True)
+            self.resumeButton.setEnabled(False)
 
     def pause_search(self):
         if self.worker is not None:
@@ -222,7 +225,7 @@ class JobApplicationGUI(QMainWindow):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_job_dialog(job)
         if not dialog:
-            dialog = JobDetailsDialog(self, job)
+            dialog = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
             self.dialogs[job.id] = dialog
 
         dialog.exec_()

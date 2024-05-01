@@ -2,7 +2,6 @@ from sqlalchemy import Column, String, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from src.scraper import Job, Contact, Assignment
 
 Base = declarative_base()
 
@@ -29,14 +28,16 @@ class ContactDAO:
     def __init__(self, session):
         self.session = session
 
-    def add_contact(self, contact: Contact):
-        self.session.add(contact)
-        self.session.commit()
+    def add_contact(self, contact):
+        contact_model = self.session.query(ContactModel).filter_by(id=contact.id).first()
+        if not contact_model:
+            self.session.add(contact)
+            self.session.commit()
 
     def get_contact_by_id(self, contact_id):
         return self.session.query(ContactModel).filter_by(id=contact_id).first()
 
-    def update_contact(self, contact: Contact):
+    def update_contact(self, contact):
         existing_contact = self.session.query(ContactModel).filter_by(id=contact.id).first()
         if existing_contact:
             existing_contact.name = contact.name
@@ -66,14 +67,14 @@ class AssignmentDAO:
     def __init__(self, session):
         self.session = session
 
-    def add_assignment(self, assignment: Assignment):
+    def add_assignment(self, assignment):
         self.session.add(assignment)
         self.session.commit()
 
     def get_assignment_by_id(self, assignment_id):
         return self.session.query(AssignmentModel).filter_by(id=assignment_id).first()
 
-    def update_assignment(self, assignment: Assignment):
+    def update_assignment(self, assignment):
         assignment_model = self.session.query(AssignmentModel).filter_by(id=assignment.id).first()
         if assignment_model:
             assignment_model.skills = assignment.skills
@@ -114,7 +115,7 @@ class JobDAO:
     def __init__(self):
         self.session = Session()
 
-    def add_job(self, job: Job):
+    def add_job(self, job):
         job_model = self.session.query(JobModel).filter_by(id=job.id).first()
         if not job_model:
             # Check if the submitter exists and link it, otherwise, create a new ContactModel
@@ -156,7 +157,7 @@ class JobDAO:
             self.session.add(job_model)
             self.session.commit()
 
-    def update_job(self, job: Job):
+    def update_job(self, job):
         job_model = self.session.query(JobModel).filter_by(id=job.id).first()
         if job_model:
             job_model.position = job.position
@@ -203,6 +204,9 @@ class JobDAO:
 
     def list_all_jobs(self):
         return self.session.query(JobModel).all()
+    
+    def get_job_by_id(self, job_id):
+            return self.session.query(JobModel).filter_by(id=job_id).first()
 
 class CandidateModel(Base):
     __tablename__ = 'candidates'
@@ -252,13 +256,20 @@ class CandidateDAO:
 
     def list_all_candidates(self):
         return self.session.query(CandidateModel).all()
-    
+        
+    def get_motivation(self, job_id, candidate_id):
+            association = self.session.query(JobCandidateAssociation).filter_by(
+                job_id=job_id, candidate_id=candidate_id).first()
+            if association:
+                return association.motivation
+            return None
 
-class MotivationDAO:
+
+class MatchDAO:
     def __init__(self):
         self.session = Session()
 
-    def add_motivation(self, job_id, candidate_id, motivation_text):
+    def add_match(self, job_id, candidate_id, motivation_text):
         motivation_model = self.session.query(JobCandidateAssociation).filter_by(job_id=job_id, candidate_id=candidate_id).first()
         if motivation_model:
             self.update_motivation(job_id, candidate_id, motivation_text)
@@ -278,20 +289,31 @@ class MotivationDAO:
             association.motivation = new_motivation_text
             self.session.commit()
 
-    def get_motivation(self, job_id, candidate_id):
+    def get_match(self, job_id, candidate_id):
         return self.session.query(JobCandidateAssociation).filter_by(
             job_id=job_id, candidate_id=candidate_id).first()
 
-    def delete_motivation(self, job_id, candidate_id):
+    def delete_match(self, job_id, candidate_id):
         association = self.session.query(JobCandidateAssociation).filter_by(
             job_id=job_id, candidate_id=candidate_id).first()
         if association:
             self.session.delete(association)
             self.session.commit()
 
-    def list_all_motivations(self):
+    def list_all_matches(self):
         return self.session.query(JobCandidateAssociation).all()
-
+    
+    def get_candidates_for_job(self, job_id):
+            associations = self.session.query(JobCandidateAssociation).filter_by(job_id=job_id).all()
+            candidates = [assoc.candidate for assoc in associations if assoc.candidate is not None]
+            return candidates
+    
+    def get_motivation(self, job_id, candidate_id):
+            association = self.session.query(JobCandidateAssociation).filter_by(
+                job_id=job_id, candidate_id=candidate_id).first()
+            if association:
+                return association.motivation
+            return None
 
 # Set up the engine and session
 engine = create_engine(r'sqlite:///src\db\_data\jobs.db')

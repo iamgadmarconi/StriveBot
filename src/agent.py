@@ -67,12 +67,12 @@ def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
                     RETURN **ONLY** THE NAME OF THE BEST MATCHING CANDIDATES (UP TO A MAXIMUM OF 3) FOR THE JOB.\n
                     The job is the following:\n
                     {job.position}.\n
-                    The job has the following description:\n
-                    {job.assignment.description}\n
                     The job has the following requirements:\n
                     {job.assignment.requirements}\n
                     The job requires the following skills:\n
                     {job.assignment.skills}\n
+                    The job has the following preferences:\n
+                    {job.assignment.preferences}\n
                     You have the following candidates:\n
                     {str(profiles)}\n
                     """,

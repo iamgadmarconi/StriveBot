@@ -1,5 +1,4 @@
 import requests
-import hashlib
 
 from bs4 import BeautifulSoup
 
@@ -10,6 +9,7 @@ from src.utils import (
     get_parameters_from_raw_description,
     get_id_from_name,
 )
+from src.db.db import JobDAO
 
 
 class Contact:
@@ -62,15 +62,11 @@ class Contact:
 
 class Assignment:
     def __init__(self, description: dict) -> None:
-        self._description = description
-        self._skills = self._description.get("SKILLS")
-        self._requirements = self._description.get("REQUIREMENTS")
-        self._preferences = self._description.get("PREFERENCES")
-        self._id = get_id_from_name(f"{self.requirements[:4]}{self.preferences[:4]}{self.skills[:4]}")
 
-    @property
-    def description(self):
-        return self._description
+        self._skills = description.get("SKILLS")
+        self._requirements = description.get("REQUIREMENTS")
+        self._preferences = description.get("PREFERENCES")
+        self._id = get_id_from_name(f"{self.requirements[:4]}{self.preferences[:4]}{self.skills[:4]}")
 
     @property
     def skills(self):
@@ -87,10 +83,6 @@ class Assignment:
     @property
     def id(self):
         return self._id
-
-    @description.setter
-    def description(self, value):
-        self._description = value
 
     @skills.setter
     def skills(self, value):
@@ -385,7 +377,7 @@ class Job:
                 setattr(self, attr, value)
 
 
-def get_jobs(agent: Agent, query: str = None):
+def get_jobs(agent: Agent, job_dao, query: str = None):
     url = (
         f"https://striive.com/nl/opdrachten/?query={query.replace(' ', '%20')}"
         if query
@@ -401,9 +393,13 @@ def get_jobs(agent: Agent, query: str = None):
         title = card.find("div", class_="hfp_card-title hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-title hfp_ellipsize") else "No Title"
         company = card.find("div", class_="hfp_card-company hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-company hfp_ellipsize") else "No Company"
 
-        job = Job(agent, link, title, company)
+        job_id = get_id_from_name(f"{title}{company}")
 
-        yield job
+        # Check if the job already exists in the database
+        existing_job = job_dao.get_job_by_id(job_id)
+        if not existing_job:
+            job = Job(agent, link, title, company)
+            yield job
 
 def collect_all_jobs(agent: Agent, query=None) -> list[Job]:
     all_jobs = []

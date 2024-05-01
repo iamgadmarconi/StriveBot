@@ -8,7 +8,7 @@ from threading import Event
 from src.scraper import get_jobs, Job
 from src.profiles import Motivation, Profile
 from src.agent import get_profiles_from_match, motivation_letter
-from src.db.db import JobDAO, CandidateDAO, MotivationDAO
+from src.db.db import JobDAO, CandidateDAO, MatchDAO
 
 
 class Worker(QThread):
@@ -37,7 +37,7 @@ class Worker(QThread):
 
         else:
             # Process as a search term through get_jobs
-            jobs_generator = get_jobs(self.agent, self.input_text)
+            jobs_generator = get_jobs(self.agent, self.dao, self.input_text)
             for job in jobs_generator:
                 self._pause_event.wait()
                 self.dao.add_job(job)
@@ -68,17 +68,21 @@ class MatchingWorker(QThread):
     completed = pyqtSignal(str)
     error = pyqtSignal(str)
 
-    def __init__(self, agent, profiles, jobs):
+    def __init__(self, agent, profiles, jobs: list[Job], jobdao: JobDAO, matchdao: MatchDAO):
         super().__init__()
         self.agent = agent
         self.profiles = profiles
         self.jobs = jobs
+        self.jobdao = jobdao
+        self.matchdao = matchdao
 
     def run(self):
         try:
             for job in self.jobs:
                 print(f"Matching for {job.position} at {job.company}")
                 candidates = get_profiles_from_match(self.agent, self.profiles, job)
+                for candidate in candidates:
+                    self.matchdao.add_match(job.id, candidate.id, "")
                 self.profiles_found.emit(candidates, job)
                 print(f"Found {len(candidates)} candidates for {job.position} at {job.company}")
             self.completed.emit("Success: Matching completed.")

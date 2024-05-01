@@ -21,15 +21,19 @@ from PyQt5.QtCore import QUrl
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
 from src.app.worker import MotivationWorker, MatchingWorker
+from src.profiles import Profile
+from src.db.db import CandidateModel
 
 
 class JobDetailsDialog(QDialog):
-    def __init__(self, parent, job):
+    def __init__(self, parent, job, candidatedao, matchdao):
         super().__init__()
         self.par = parent
         self.agent = parent.agent
         self.job = job
         self._id = job.id
+        self.candidatedao = candidatedao
+        self.matchdao = matchdao
         self.candidate_dialogs = {}
         self.initUI()
 
@@ -51,6 +55,7 @@ class JobDetailsDialog(QDialog):
         tabWidget.addTab(self.create_contact_tab(), "Contact")
         tabWidget.addTab(self.create_assignment_tab(), "Assignment")
         tabWidget.addTab(self.create_candidates_tab(), "Candidates")
+        self.load_matched_candidates()  
 
         layout.addWidget(tabWidget)
 
@@ -252,6 +257,24 @@ class JobDetailsDialog(QDialog):
         self.createMotivationButton.setEnabled(True)
         QMessageBox.information(self, "Error", message)
 
+    def load_matched_candidates(self):
+        matched_candidates = self.matchdao.get_candidates_for_job(self.job.id)
+        print("Matched Candidates:", matched_candidates)  # Debugging line
+        self.populate_candidates_tab(matched_candidates)
+
+    def populate_candidates_tab(self, candidates):
+        self.candidateList.clear()  # Clear existing entries
+        for candidate in candidates:
+            if candidate is not None:
+                item = QListWidgetItem(candidate.name)
+                item.setData(Qt.UserRole, candidate)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                item.setCheckState(Qt.Unchecked)
+                self.candidateList.addItem(item)
+            else:
+                # Log or handle the case where candidate is None
+                print("Encountered None candidate, skipping...")
+
 class CandidateDetailsDialog(QDialog):
     def __init__(self, candidate, parent: JobDetailsDialog):
         super().__init__()
@@ -298,7 +321,10 @@ class CandidateDetailsDialog(QDialog):
         widget = QWidget()
         layout = QVBoxLayout()
         self.motivationWidget = QTextBrowser()
-        self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        if isinstance(self.candidate, Profile):
+            self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        elif isinstance(self.candidate, CandidateModel):
+            self.motivationWidget.setText(self._parent.matchdao.get_motivation(self._parent.job.id, self.candidate.id))
         layout.addWidget(self.motivationWidget)
 
         self.createMotivationButton = QPushButton("Create Motivation Letter")
