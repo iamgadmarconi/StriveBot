@@ -235,7 +235,7 @@ class JobDetailsDialog(QDialog):
         candidates = [self.candidateList.item(i).data(Qt.UserRole) for i in range(self.candidateList.count())
                         if self.candidateList.item(i).checkState() == Qt.Checked]
         
-        self.motivationWorker = MotivationWorker(self.agent, self.job, candidates)
+        self.motivationWorker = MotivationWorker(self.agent, self.job, candidates, self.matchdao)
         self.motivationWorker.completed.connect(self.on_motivation_completed)
         self.motivationWorker.error.connect(self.on_motivation_error)
         self.motivationWorker.start()
@@ -324,7 +324,7 @@ class CandidateDetailsDialog(QDialog):
         if isinstance(self.candidate, Profile):
             self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
         elif isinstance(self.candidate, CandidateModel):
-            self.motivationWidget.setText(self._parent.matchdao.get_motivation(self._parent.job.id, self.candidate.id))
+            self.motivationWidget.setText(self._parent.matchdao.get_motivation(self.parent.job.id, self.candidate.id))
         layout.addWidget(self.motivationWidget)
 
         self.createMotivationButton = QPushButton("Create Motivation Letter")
@@ -339,7 +339,7 @@ class CandidateDetailsDialog(QDialog):
         self.createMotivationButton.setText("Creating Motivation Letter...")
         candidates = [self.candidate]
         
-        self.motivationWorker = MotivationWorker(self.parent.agent, self.parent.job, candidates)
+        self.motivationWorker = MotivationWorker(self.parent.agent, self.parent.job, candidates, self.parent.matchdao)
         self.motivationWorker.completed.connect(self.on_motivation_completed)
         self.motivationWorker.error.connect(self.on_motivation_error)
         self.motivationWorker.start()

@@ -320,5 +320,3 @@ engine = create_engine(r'sqlite:///src\db\_data\jobs.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
-
-

@@ -6,9 +6,9 @@ from threading import Event
 
 
 from src.scraper import get_jobs, Job
-from src.profiles import Motivation, Profile
+from src.profiles import Motivation, Profile, create_profile_from_candidate
 from src.agent import get_profiles_from_match, motivation_letter
-from src.db.db import JobDAO, CandidateDAO, MatchDAO
+from src.db.db import JobDAO, CandidateDAO, MatchDAO, CandidateModel
 
 
 class Worker(QThread):
@@ -94,11 +94,12 @@ class MotivationWorker(QThread):
     completed = pyqtSignal(str)  # Signal to indicate completion with a message
     error = pyqtSignal(str)  # Signal to indicate an error with a message
 
-    def __init__(self, agent, job, candidates: list[Profile]):
+    def __init__(self, agent, job, candidates: list[Profile], matchdao: MatchDAO):
         super().__init__()
         self.agent = agent
         self.job = job
         self.candidates = candidates
+        self.matchdao = matchdao
 
     def run(self):
         try:
@@ -107,6 +108,8 @@ class MotivationWorker(QThread):
                 return
 
             for candidate in self.candidates:
+                if isinstance(candidate, CandidateModel):
+                    candidate = create_profile_from_candidate(candidate)
                 new_motivation = motivation_letter(self.agent, candidate, self.job)
                 motivation_obj = Motivation(self.job, new_motivation)
                 candidate.update_motivation(motivation_obj)

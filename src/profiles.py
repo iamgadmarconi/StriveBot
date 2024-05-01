@@ -120,3 +120,23 @@ class ProfileManager:
 def get_data(file_name: str = r"src\candidates\candidates.csv") -> dict:
     df = pd.read_csv(file_name, delimiter=";")
     return df.to_dict(orient="records")
+
+
+def create_profile_from_candidate(candidate_model):
+    # Retrieve the candidate from the database
+    candidate = candidate_model
+
+    # Create a dictionary from the CandidateModel data
+    candidate_data = {
+        "name": candidate.name,
+        "interests": candidate.interests,
+        "experience": candidate.experience,
+        "skills": candidate.skills,
+        "education": candidate.education,
+        "profile": candidate.profile,
+        "certifications": candidate.certificates,
+        "id": candidate.id,
+    }
+
+    profile = Profile(candidate_data)
+    return profile
