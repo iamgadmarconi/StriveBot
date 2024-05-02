@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QScrollArea,
     QTextBrowser,
     QSizePolicy,
+    QApplication,
 )
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from PyQt5.QtCore import Qt
@@ -345,6 +346,7 @@ class CandidateDetailsDialog(QDialog):
     def create_motivation_tab(self, parent_id):
         widget = QWidget()
         layout = QVBoxLayout()
+
         self.motivationWidget = QTextBrowser()
         if isinstance(self.candidate, Profile):
             self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
@@ -352,12 +354,24 @@ class CandidateDetailsDialog(QDialog):
             self.motivationWidget.setText(self._parent.matchdao.get_motivation(self.parent.job.id, self.candidate.id))
         layout.addWidget(self.motivationWidget)
 
+        # Button to create motivation letter
         self.createMotivationButton = QPushButton("Create Motivation Letter")
         self.createMotivationButton.clicked.connect(self.create_motivation)
         layout.addWidget(self.createMotivationButton)
 
+        # Button to copy the content of the motivation text
+        self.copyMotivationButton = QPushButton("Copy Motivation")
+        self.copyMotivationButton.clicked.connect(self.copy_motivation_text)
+        layout.addWidget(self.copyMotivationButton)
+
         widget.setLayout(layout)
         return widget
+
+    def copy_motivation_text(self):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.motivationWidget.toPlainText())
+        QMessageBox.information(self, "Copied", "Motivation text has been copied to clipboard.")
+
     
     def create_motivation(self):
         self.createMotivationButton.setEnabled(False)
