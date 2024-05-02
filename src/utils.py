@@ -1,5 +1,7 @@
 import os
+import sys
 import hashlib
+
 from openai import OpenAI
 
 
@@ -192,3 +194,13 @@ def get_id_from_name(name: str) -> str:
     m = hashlib.md5()
     m.update(name.encode("utf-8"))
     return str(int(m.hexdigest(), 16))[0:12]
+
+
+def get_base_path():
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle, the PyInstaller bootloader
+        # extends the sys module by a flag frozen=True and sets the app
+        # path into variable _MEIPASS'.
+        return sys._MEIPASS
+    else:
+        return os.path.dirname(os.path.abspath(__file__))

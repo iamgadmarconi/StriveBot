@@ -1,6 +1,8 @@
+import os
+
 import pandas as pd
 
-from src.utils import get_id_from_name
+from src.utils import get_id_from_name, get_base_path
 
 
 class Motivation:
@@ -117,8 +119,11 @@ class ProfileManager:
         return description
 
 
-def get_data(file_name: str = r"src\candidates\candidates.csv") -> dict:
-    df = pd.read_csv(file_name, delimiter=";")
+def get_data() -> dict:
+    file_path = os.path.join(get_base_path(), r'candidates\candidates.csv')
+    if not os.path.exists(file_path):
+        raise "No candidate file"
+    df = pd.read_csv(file_path, delimiter=";")
     return df.to_dict(orient="records")
 
 
