@@ -228,7 +228,7 @@ class JobApplicationGUI(QMainWindow):
             dialog = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
             self.dialogs[job.id] = dialog
 
-        dialog.exec_()
+        dialog.show()
 
     def load_jobs(self):
         try:
