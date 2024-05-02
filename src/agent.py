@@ -1,4 +1,4 @@
-from src.profiles import Profile, ProfileManager
+from src.profiles import Profile, ProfileManager, Motivation
 from src.scraper import Job
 from src.utils import Agent
 
@@ -67,12 +67,12 @@ def profile_matcher(agent: Agent, profiles: ProfileManager, job: Job) -> str:
                     RETURN **ONLY** THE NAME OF THE BEST MATCHING CANDIDATES (UP TO A MAXIMUM OF 3) FOR THE JOB.\n
                     The job is the following:\n
                     {job.position}.\n
-                    The job has the following description:\n
-                    {job.assignment.description}\n
                     The job has the following requirements:\n
                     {job.assignment.requirements}\n
                     The job requires the following skills:\n
                     {job.assignment.skills}\n
+                    The job has the following preferences:\n
+                    {job.assignment.preferences}\n
                     You have the following candidates:\n
                     {str(profiles)}\n
                     """,
@@ -105,5 +105,6 @@ def get_profiles_from_match(agent: Agent, profiles: ProfileManager, job: Job) ->
     names = profile_matcher(agent, profiles, job)
     profile_objs = profile_from_names(names)
     for profile in profile_objs:
-        profile.add_job_match(job, "")
+        motivation_obj = Motivation(job, "")
+        profile.add_job_match(motivation_obj)
     return profile_objs

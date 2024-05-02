@@ -1,3 +1,5 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
@@ -15,7 +17,6 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
 )
-from PyQt5.QtCore import Qt
 
 
 from src.app.worker import Worker, MatchingWorker
@@ -26,7 +27,7 @@ from src.profiles import ProfileManager
 from src.utils import Agent
 from src.scraper import Job
 from src.save import save_job_to_csv
-from src.agent import get_profiles_from_match
+from src.db.db import JobDAO, CandidateDAO, MatchDAO
 
 
 class JobApplicationGUI(QMainWindow):
@@ -34,14 +35,22 @@ class JobApplicationGUI(QMainWindow):
         super().__init__()
         layout = QVBoxLayout()
         self.agent = Agent()
+        self.jobdao = JobDAO()
+        self.candidatedao = CandidateDAO()
+        self.matchdao = MatchDAO()
         self.all_profiles = ProfileManager()
+        for candidate in self.all_profiles.profiles:
+            self.candidatedao.add_candidate(candidate)
+
         self.dialogs = {}  # Store dialogs for each job
         self.worker = None  # Attribute to hold the thread
+        self.child_windows = []
         self.initUI(layout)
 
     def initUI(self, layout):
         self.setWindowTitle("StriiveBot")
         self.setGeometry(100, 100, 1000, 600)
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
 
         layout.addWidget(QLabel("Job URL or Keyword:"))
 
@@ -77,12 +86,17 @@ class JobApplicationGUI(QMainWindow):
         # Connect buttons to their respective functions
         self.pauseButton.clicked.connect(self.pause_search)
         self.resumeButton.clicked.connect(self.resume_search)
-        self.cancelButton.clicked.connect(self.cancel_search)     
+        self.cancelButton.clicked.connect(self.cancel_search)
+        self.pauseButton.setEnabled(False)
+        self.cancelButton.setEnabled(False)
+        self.resumeButton.setEnabled(False)
 
         self.jobList = CustomListWidget(self)
         self.jobList.itemClicked.connect(self.display_job_details)
         self.jobList.setSelectionMode(QListWidget.MultiSelection)
         layout.addWidget(self.jobList)
+        # Load jobs from the database
+        self.load_jobs()
 
         self.exportButton = QPushButton("Export to CSV", self)
         self.matchButton = QPushButton("Match Candidates", self)
@@ -109,7 +123,7 @@ class JobApplicationGUI(QMainWindow):
         jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
                 if self.jobList.item(i).checkState() == Qt.Checked]
         if jobs:
-            self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs)
+            self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs, self.jobdao, self.matchdao)
             self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
             self.matchingWorker.completed.connect(self.on_match_complete)
             self.matchingWorker.error.connect(self.show_error)
@@ -136,9 +150,8 @@ class JobApplicationGUI(QMainWindow):
             print(f"Candidates updated for job {job.position} in background.")  # Optional debug
 
     def get_job_dialog(self, job):
-        # Retrieve or create the dialog without showing it
         if job.id not in self.dialogs:
-            self.dialogs[job.id] = JobDetailsDialog(self, job)
+            self.dialogs[job.id] = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
         return self.dialogs[job.id]
 
     def show_error(self, message):
@@ -147,13 +160,15 @@ class JobApplicationGUI(QMainWindow):
         QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
 
     def start_search(self):
+        self.resumeButton.setEnabled(False)
         self.searchButton.setEnabled(False)
         self.cancelButton.setEnabled(True)
+        self.pauseButton.setEnabled(True)
         if self.jobInput.text() == "":
             self.statusLabel.setText("Status: Searching...")
         else:
             self.statusLabel.setText(f"Status: Searching with keyword '{self.jobInput.text()[:12]}...'")
-        self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles)
+        self.worker = Worker(self.agent, self.jobInput.text(), self.all_profiles, self.jobdao)
         self.worker.finished.connect(self.on_search_complete)
         self.worker.update_status.connect(self.update_status)
         self.worker.canceled.connect(self.on_search_canceled)
@@ -175,15 +190,14 @@ class JobApplicationGUI(QMainWindow):
             self.cancelButton.setEnabled(False)
 
     def on_paused(self, is_paused):
-            # Slot to update the GUI when paused/resumed
-            if is_paused:
-                self.statusLabel.setText('Status: Paused.')
-                self.pauseButton.setEnabled(False)
-                self.resumeButton.setEnabled(True)
-            else:
-                self.statusLabel.setText('Status: Running...')
-                self.pauseButton.setEnabled(True)
-                self.resumeButton.setEnabled(False)
+        if is_paused:
+            self.statusLabel.setText('Status: Paused.')
+            self.pauseButton.setEnabled(False)
+            self.resumeButton.setEnabled(True)
+        else:
+            self.statusLabel.setText('Status: Running...')
+            self.pauseButton.setEnabled(True)
+            self.resumeButton.setEnabled(False)
 
     def pause_search(self):
         if self.worker is not None:
@@ -218,7 +232,28 @@ class JobApplicationGUI(QMainWindow):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_job_dialog(job)
         if not dialog:
-            dialog = JobDetailsDialog(self, job)
+            dialog = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
             self.dialogs[job.id] = dialog
 
-        dialog.exec_()
+        self.child_windows.append(dialog)
+        dialog.show()
+
+    def load_jobs(self):
+        try:
+            jobs = self.jobdao.list_all_jobs()  # Assuming you have a method in JobDAO to fetch all jobs
+            for job in jobs:
+                self.add_job_to_list(job)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load jobs from database:\n{str(e)}")
+
+    def add_job_to_list(self, job):
+        item = QListWidgetItem(f"{job.position} at {job.company}")
+        item.setData(Qt.UserRole, job)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setCheckState(Qt.Unchecked)
+        self.jobList.addItem(item)
+
+    def closeEvent(self, event):
+            for window in self.child_windows:
+                window.close()  # Ensure all child windows are closed
+            event.accept()

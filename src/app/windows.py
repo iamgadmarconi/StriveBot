@@ -1,9 +1,10 @@
+import os
+
 from PyQt5.QtWidgets import (
     QDialog,
     QTabWidget,
     QVBoxLayout,
     QLabel,
-    QHBoxLayout,
     QPushButton,
     QGridLayout,
     QListWidget,
@@ -11,25 +12,30 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QScrollArea,
     QTextBrowser,
-    QLineEdit,
+    QSizePolicy,
 )
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDesktopServices, QColor, QIcon
+from PyQt5.QtGui import QDesktopServices, QIcon
 from PyQt5.QtCore import QUrl
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
 from src.app.worker import MotivationWorker, MatchingWorker
+from src.profiles import Profile
+from src.db.db import CandidateModel
 
 
 class JobDetailsDialog(QDialog):
-    def __init__(self, parent, job):
+    def __init__(self, parent, job, candidatedao, matchdao):
         super().__init__()
         self.par = parent
         self.agent = parent.agent
         self.job = job
         self._id = job.id
+        self.candidatedao = candidatedao
+        self.matchdao = matchdao
         self.candidate_dialogs = {}
         self.initUI()
 
@@ -39,6 +45,7 @@ class JobDetailsDialog(QDialog):
 
     def initUI(self):
         self.setWindowTitle("Job Details")
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
 
@@ -51,6 +58,7 @@ class JobDetailsDialog(QDialog):
         tabWidget.addTab(self.create_contact_tab(), "Contact")
         tabWidget.addTab(self.create_assignment_tab(), "Assignment")
         tabWidget.addTab(self.create_candidates_tab(), "Candidates")
+        self.load_matched_candidates()  
 
         layout.addWidget(tabWidget)
 
@@ -88,7 +96,7 @@ class JobDetailsDialog(QDialog):
         # Status with colored icon
         status_label = QLabel("Status:")
         status_icon = QLabel()
-        if self.job._status == "Open":
+        if self.job.status == "Open":
             status_icon.setPixmap(QIcon(r"src\app\static\button.png").pixmap(15, 15))
         else:
             status_icon.setPixmap(QIcon(r"src\app\static\cross.png").pixmap(15, 15))
@@ -115,7 +123,7 @@ class JobDetailsDialog(QDialog):
     def create_contact_tab(self):
         widget = QWidget()
         grid = QGridLayout()
-        if self.job._submitter:
+        if self.job.submitter:
             grid.addWidget(QLabel("Name:"), 0, 0)
             grid.addWidget(QLabel(self.job.submitter.name), 0, 1)
 
@@ -203,12 +211,12 @@ class JobDetailsDialog(QDialog):
             dialog = CandidateDetailsDialog(candidate, self)
             self.candidate_dialogs[candidate.id] = dialog
 
-        dialog.exec_()
+        dialog.show()
 
     def match_candidates(self):
         self.matchCandidatesButton.setEnabled(False)
         self.matchCandidatesButton.setText("Matching Candidates...")
-        self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job])
+        self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job], self.par.jobdao, self.matchdao)
         self.matchingWorker.profiles_found.connect(self.par.populate_candidates_tab)
         self.matchingWorker.completed.connect(self.on_match_complete)
         self.matchingWorker.error.connect(self.show_error)
@@ -230,7 +238,7 @@ class JobDetailsDialog(QDialog):
         candidates = [self.candidateList.item(i).data(Qt.UserRole) for i in range(self.candidateList.count())
                         if self.candidateList.item(i).checkState() == Qt.Checked]
         
-        self.motivationWorker = MotivationWorker(self.agent, self.job, candidates)
+        self.motivationWorker = MotivationWorker(self.agent, self.job, candidates, self.matchdao)
         self.motivationWorker.completed.connect(self.on_motivation_completed)
         self.motivationWorker.error.connect(self.on_motivation_error)
         self.motivationWorker.start()
@@ -252,6 +260,25 @@ class JobDetailsDialog(QDialog):
         self.createMotivationButton.setEnabled(True)
         QMessageBox.information(self, "Error", message)
 
+    def load_matched_candidates(self):
+        matched_candidates = self.matchdao.get_candidates_for_job(self.job.id)
+        print("Matched Candidates:", matched_candidates)  # Debugging line
+        self.populate_candidates_tab(matched_candidates)
+
+    def populate_candidates_tab(self, candidates):
+        self.candidateList.clear()  # Clear existing entries
+        for candidate in candidates:
+            if candidate is not None:
+                item = QListWidgetItem(candidate.name)
+                item.setData(Qt.UserRole, candidate)
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                item.setCheckState(Qt.Unchecked)
+                self.candidateList.addItem(item)
+            else:
+                # Log or handle the case where candidate is None
+                print("Encountered None candidate, skipping...")
+
+
 class CandidateDetailsDialog(QDialog):
     def __init__(self, candidate, parent: JobDetailsDialog):
         super().__init__()
@@ -260,6 +287,8 @@ class CandidateDetailsDialog(QDialog):
         self._parent = parent
         self._parent_id = parent.id
         self.initUI()
+
+        self.setModal(False)
 
     @property
     def id(self):
@@ -277,6 +306,7 @@ class CandidateDetailsDialog(QDialog):
         self.setWindowTitle("Candidate Details")
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
 
         layout = QVBoxLayout()
 
@@ -291,14 +321,35 @@ class CandidateDetailsDialog(QDialog):
     def create_candidate_tab(self):
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel(f"Name: {self.candidate.name}"))
+
+        label = QLabel(f"Name: {self.candidate.name}")
+        label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        layout.addWidget(label)
+        
+
+        pdf_viewer = QWebEngineView()
+        pdf_viewer.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
+        candidate_name = self.candidate.name.replace(" ", "_").lower()
+        resume_path = os.path.abspath(f"src\\candidates\\{candidate_name}.pdf")
+        print(resume_path)
+        url = QUrl.fromLocalFile(resume_path)
+        
+        pdf_viewer.load(url)
+        pdf_viewer.setZoomFactor(1.0)  # Adjust zoom factor as necessary
+
+        layout.addWidget(pdf_viewer, 1)
+
+        widget.setLayout(layout)
         return widget
 
     def create_motivation_tab(self, parent_id):
         widget = QWidget()
         layout = QVBoxLayout()
         self.motivationWidget = QTextBrowser()
-        self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        if isinstance(self.candidate, Profile):
+            self.motivationWidget.setText(self.candidate.get_job_match(parent_id)[1])
+        elif isinstance(self.candidate, CandidateModel):
+            self.motivationWidget.setText(self._parent.matchdao.get_motivation(self.parent.job.id, self.candidate.id))
         layout.addWidget(self.motivationWidget)
 
         self.createMotivationButton = QPushButton("Create Motivation Letter")
@@ -313,13 +364,16 @@ class CandidateDetailsDialog(QDialog):
         self.createMotivationButton.setText("Creating Motivation Letter...")
         candidates = [self.candidate]
         
-        self.motivationWorker = MotivationWorker(self.parent.agent, self.parent.job, candidates)
+        self.motivationWorker = MotivationWorker(self.parent.agent, self.parent.job, candidates, self.parent.matchdao)
         self.motivationWorker.completed.connect(self.on_motivation_completed)
         self.motivationWorker.error.connect(self.on_motivation_error)
         self.motivationWorker.start()
 
     def on_motivation_completed(self, message):
-        motivation = self.candidate.get_job_match(self.parent_id)[1]
+        if isinstance(self.candidate, Profile):
+            motivation = self.candidate.get_job_match(self.parent_id)[1]
+        elif isinstance(self.candidate, CandidateModel):
+            motivation = self.parent.matchdao.get_motivation(self.parent.job.id, self.candidate.id)
         self.motivationWidget.setText(motivation)
         QMessageBox.information(self, "Success", message)
         self.createMotivationButton.setText("Recreate Motivation Letter")

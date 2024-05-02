@@ -1,5 +1,4 @@
 import requests
-import hashlib
 
 from bs4 import BeautifulSoup
 
@@ -8,7 +7,9 @@ from src.utils import (
     clean_text,
     categorize_description,
     get_parameters_from_raw_description,
+    get_id_from_name,
 )
+from src.db.db import JobDAO
 
 
 class Contact:
@@ -16,6 +17,7 @@ class Contact:
         self._name = name
         self._phone = phone
         self._email = email
+        self._id = get_id_from_name(name)
 
     @property
     def name(self):
@@ -29,6 +31,10 @@ class Contact:
     def email(self):
         return self._email
     
+    @property
+    def id(self):
+        return self._id
+
     @name.setter
     def name(self, value):
         self._name = value
@@ -56,14 +62,11 @@ class Contact:
 
 class Assignment:
     def __init__(self, description: dict) -> None:
-        self._description = description
-        self._skills = self._description.get("SKILLS")
-        self._requirements = self._description.get("REQUIREMENTS")
-        self._preferences = self._description.get("PREFERENCES")
 
-    @property
-    def description(self):
-        return self._description
+        self._skills = description.get("SKILLS")
+        self._requirements = description.get("REQUIREMENTS")
+        self._preferences = description.get("PREFERENCES")
+        self._id = get_id_from_name(f"{self.requirements[:4]}{self.preferences[:4]}{self.skills[:4]}")
 
     @property
     def skills(self):
@@ -76,10 +79,10 @@ class Assignment:
     @property
     def preferences(self):
         return self._preferences
-
-    @description.setter
-    def description(self, value):
-        self._description = value
+    
+    @property
+    def id(self):
+        return self._id
 
     @skills.setter
     def skills(self, value):
@@ -128,10 +131,7 @@ class Job:
         self._candidates = []
         self._get_job_params()
         self._assignment = self._get_assignment_from_url()
-
-        m = hashlib.md5()
-        m.update(f"{self.position}{self.company}".encode())
-        self._id = str(int(m.hexdigest(), 16))[0:12]
+        self._id = get_id_from_name(f"{self.position}{self.company}")
 
     @property
     def soup(self):
@@ -238,7 +238,7 @@ class Job:
             for index, (c, m) in enumerate(self.candidates):
                 if c.id == candidate.id:
                     self.candidates[index] = (c, new_motivation)  # Update the tuple in the list
-                    c.update_motivation(self, new_motivation)  # Call candidate's method to update its list
+                    c.update_motivation(new_motivation)  # Call candidate's method to update its list
                     break
 
     def __repr__(self) -> str:
@@ -377,7 +377,7 @@ class Job:
                 setattr(self, attr, value)
 
 
-def get_jobs(agent: Agent, query: str = None):
+def get_jobs(agent: Agent, job_dao, query: str = None):
     url = (
         f"https://striive.com/nl/opdrachten/?query={query.replace(' ', '%20')}"
         if query
@@ -393,9 +393,13 @@ def get_jobs(agent: Agent, query: str = None):
         title = card.find("div", class_="hfp_card-title hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-title hfp_ellipsize") else "No Title"
         company = card.find("div", class_="hfp_card-company hfp_ellipsize").text.strip() if card.find("div", class_="hfp_card-company hfp_ellipsize") else "No Company"
 
-        job = Job(agent, link, title, company)
+        job_id = get_id_from_name(f"{title}{company}")
 
-        yield job
+        # Check if the job already exists in the database
+        existing_job = job_dao.get_job_by_id(job_id)
+        if not existing_job:
+            job = Job(agent, link, title, company)
+            yield job
 
 def collect_all_jobs(agent: Agent, query=None) -> list[Job]:
     all_jobs = []

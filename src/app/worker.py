@@ -6,7 +6,9 @@ from threading import Event
 
 
 from src.scraper import get_jobs, Job
+from src.profiles import Motivation, Profile, create_profile_from_candidate
 from src.agent import get_profiles_from_match, motivation_letter
+from src.db.db import JobDAO, CandidateDAO, MatchDAO, CandidateModel
 
 
 class Worker(QThread):
@@ -15,11 +17,12 @@ class Worker(QThread):
     paused = pyqtSignal(bool)
     canceled = pyqtSignal()  # Define the canceled signal
 
-    def __init__(self, agent, input_text, all_profiles):
+    def __init__(self, agent, input_text, all_profiles, dao: JobDAO):
         super().__init__()
         self.agent = agent
         self.input_text = input_text
         self.all_profiles = all_profiles
+        self.dao = dao # Inject the JobDAO
         self._is_running = True
         self._pause_event = Event()
         self._pause_event.set()  # Start unpaused
@@ -28,14 +31,16 @@ class Worker(QThread):
         if re.match(r'https?://', self.input_text):
             # Input is a URL, process as a single job directly
             job = Job(self.agent, url=self.input_text)  # Assuming the Job constructor can handle URL directly
+            self.dao.add_job(job)
             self.update_status.emit(f'Found: {job.position} at {job.company}', job)
             self.finished.emit([job])  # Emit the single job in a list
 
         else:
             # Process as a search term through get_jobs
-            jobs_generator = get_jobs(self.agent, self.input_text)
+            jobs_generator = get_jobs(self.agent, self.dao, self.input_text)
             for job in jobs_generator:
                 self._pause_event.wait()
+                self.dao.add_job(job)
                 if not self._is_running:
                     self.canceled.emit()
                     return
@@ -63,17 +68,21 @@ class MatchingWorker(QThread):
     completed = pyqtSignal(str)
     error = pyqtSignal(str)
 
-    def __init__(self, agent, profiles, jobs):
+    def __init__(self, agent, profiles, jobs: list[Job], jobdao: JobDAO, matchdao: MatchDAO):
         super().__init__()
         self.agent = agent
         self.profiles = profiles
         self.jobs = jobs
+        self.jobdao = jobdao
+        self.matchdao = matchdao
 
     def run(self):
         try:
             for job in self.jobs:
                 print(f"Matching for {job.position} at {job.company}")
                 candidates = get_profiles_from_match(self.agent, self.profiles, job)
+                for candidate in candidates:
+                    self.matchdao.add_match(job.id, candidate.id, "")
                 self.profiles_found.emit(candidates, job)
                 print(f"Found {len(candidates)} candidates for {job.position} at {job.company}")
             self.completed.emit("Success: Matching completed.")
@@ -85,11 +94,12 @@ class MotivationWorker(QThread):
     completed = pyqtSignal(str)  # Signal to indicate completion with a message
     error = pyqtSignal(str)  # Signal to indicate an error with a message
 
-    def __init__(self, agent, job, candidates):
+    def __init__(self, agent, job, candidates: list[Profile], matchdao: MatchDAO):
         super().__init__()
         self.agent = agent
         self.job = job
         self.candidates = candidates
+        self.matchdao = matchdao
 
     def run(self):
         try:
@@ -98,8 +108,12 @@ class MotivationWorker(QThread):
                 return
 
             for candidate in self.candidates:
+                if isinstance(candidate, CandidateModel):
+                    candidate = create_profile_from_candidate(candidate)
                 new_motivation = motivation_letter(self.agent, candidate, self.job)
-                candidate.update_motivation(self.job, new_motivation)
+                motivation_obj = Motivation(self.job, new_motivation)
+                candidate.update_motivation(motivation_obj)
+                self.matchdao.update_motivation(self.job.id, candidate.id, motivation_obj.motivation)
 
             self.completed.emit("Success: Motivation letters created successfully.")
         except Exception as e:
