@@ -1,9 +1,10 @@
+import os
+
 from PyQt5.QtWidgets import (
     QDialog,
     QTabWidget,
     QVBoxLayout,
     QLabel,
-    QHBoxLayout,
     QPushButton,
     QGridLayout,
     QListWidget,
@@ -11,12 +12,13 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QScrollArea,
     QTextBrowser,
-    QLineEdit,
+    QSizePolicy,
 )
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDesktopServices, QColor, QIcon
+from PyQt5.QtGui import QDesktopServices, QIcon
 from PyQt5.QtCore import QUrl
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
 
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
@@ -275,6 +277,7 @@ class JobDetailsDialog(QDialog):
                 # Log or handle the case where candidate is None
                 print("Encountered None candidate, skipping...")
 
+
 class CandidateDetailsDialog(QDialog):
     def __init__(self, candidate, parent: JobDetailsDialog):
         super().__init__()
@@ -316,7 +319,25 @@ class CandidateDetailsDialog(QDialog):
     def create_candidate_tab(self):
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel(f"Name: {self.candidate.name}"))
+
+        label = QLabel(f"Name: {self.candidate.name}")
+        label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        layout.addWidget(label)
+        
+
+        pdf_viewer = QWebEngineView()
+        pdf_viewer.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
+        candidate_name = self.candidate.name.replace(" ", "_").lower()
+        resume_path = os.path.abspath(f"src\\candidates\\{candidate_name}.pdf")
+        print(resume_path)
+        url = QUrl.fromLocalFile(resume_path)
+        
+        pdf_viewer.load(url)
+        pdf_viewer.setZoomFactor(1.0)  # Adjust zoom factor as necessary
+
+        layout.addWidget(pdf_viewer, 1)
+
+        widget.setLayout(layout)
         return widget
 
     def create_motivation_tab(self, parent_id):

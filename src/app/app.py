@@ -44,6 +44,7 @@ class JobApplicationGUI(QMainWindow):
 
         self.dialogs = {}  # Store dialogs for each job
         self.worker = None  # Attribute to hold the thread
+        self.child_windows = []
         self.initUI(layout)
 
     def initUI(self, layout):
@@ -84,7 +85,10 @@ class JobApplicationGUI(QMainWindow):
         # Connect buttons to their respective functions
         self.pauseButton.clicked.connect(self.pause_search)
         self.resumeButton.clicked.connect(self.resume_search)
-        self.cancelButton.clicked.connect(self.cancel_search)     
+        self.cancelButton.clicked.connect(self.cancel_search)
+        self.pauseButton.setEnabled(False)
+        self.cancelButton.setEnabled(False)
+        self.resumeButton.setEnabled(False)
 
         self.jobList = CustomListWidget(self)
         self.jobList.itemClicked.connect(self.display_job_details)
@@ -155,8 +159,10 @@ class JobApplicationGUI(QMainWindow):
         QMessageBox.critical(self, "Error", f"An error occurred during matching:\n{message}")
 
     def start_search(self):
+        self.resumeButton.setEnabled(False)
         self.searchButton.setEnabled(False)
         self.cancelButton.setEnabled(True)
+        self.pauseButton.setEnabled(True)
         if self.jobInput.text() == "":
             self.statusLabel.setText("Status: Searching...")
         else:
@@ -228,6 +234,7 @@ class JobApplicationGUI(QMainWindow):
             dialog = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
             self.dialogs[job.id] = dialog
 
+        self.child_windows.append(dialog)
         dialog.show()
 
     def load_jobs(self):
@@ -244,3 +251,8 @@ class JobApplicationGUI(QMainWindow):
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         item.setCheckState(Qt.Unchecked)
         self.jobList.addItem(item)
+
+    def closeEvent(self, event):
+            for window in self.child_windows:
+                window.close()  # Ensure all child windows are closed
+            event.accept()
