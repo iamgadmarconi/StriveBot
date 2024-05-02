@@ -1,3 +1,5 @@
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
@@ -15,7 +17,6 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
 )
-from PyQt5.QtCore import Qt
 
 
 from src.app.worker import Worker, MatchingWorker
@@ -26,7 +27,6 @@ from src.profiles import ProfileManager
 from src.utils import Agent
 from src.scraper import Job
 from src.save import save_job_to_csv
-from src.agent import get_profiles_from_match
 from src.db.db import JobDAO, CandidateDAO, MatchDAO
 
 
@@ -50,6 +50,7 @@ class JobApplicationGUI(QMainWindow):
     def initUI(self, layout):
         self.setWindowTitle("StriiveBot")
         self.setGeometry(100, 100, 1000, 600)
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
 
         layout.addWidget(QLabel("Job URL or Keyword:"))
 

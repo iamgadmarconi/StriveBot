@@ -45,6 +45,7 @@ class JobDetailsDialog(QDialog):
 
     def initUI(self):
         self.setWindowTitle("Job Details")
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
 
@@ -215,7 +216,7 @@ class JobDetailsDialog(QDialog):
     def match_candidates(self):
         self.matchCandidatesButton.setEnabled(False)
         self.matchCandidatesButton.setText("Matching Candidates...")
-        self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job])
+        self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job], self.par.jobdao, self.matchdao)
         self.matchingWorker.profiles_found.connect(self.par.populate_candidates_tab)
         self.matchingWorker.completed.connect(self.on_match_complete)
         self.matchingWorker.error.connect(self.show_error)
@@ -305,6 +306,7 @@ class CandidateDetailsDialog(QDialog):
         self.setWindowTitle("Candidate Details")
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
+        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
 
         layout = QVBoxLayout()
 
