@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QTabWidget,
     QVBoxLayout,
@@ -15,11 +15,12 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QApplication,
 )
-from PyQt5.QtWidgets import QWidget, QMessageBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDesktopServices, QIcon
-from PyQt5.QtCore import QUrl
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings
+from PySide6.QtWidgets import QWidget, QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QDesktopServices, QIcon, QTextOption
+from PySide6.QtCore import QUrl
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings
 
 from src.utils import format_bulleted_list
 from src.app.utils import CustomListWidget
@@ -69,7 +70,7 @@ class JobDetailsDialog(QDialog):
         formatted_text = format_bulleted_list(text) if bulleted else text
         textEdit.setText(formatted_text)
         textEdit.setReadOnly(True)
-        textEdit.setWordWrapMode(True)
+        textEdit.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         return textEdit
 
     def create_main_tab(self):
@@ -237,7 +238,7 @@ class JobDetailsDialog(QDialog):
         self.createMotivationButton.setEnabled(False)
         self.createMotivationButton.setText("Creating Motivation Letters...")
         candidates = [self.candidateList.item(i).data(Qt.UserRole) for i in range(self.candidateList.count())
-                        if self.candidateList.item(i).checkState() == Qt.Checked]
+                        if self.candidateList.item(i).checkState() == Qt.CheckState.Checked]
         
         self.motivationWorker = MotivationWorker(self.agent, self.job, candidates, self.matchdao)
         self.motivationWorker.completed.connect(self.on_motivation_completed)
@@ -273,7 +274,7 @@ class JobDetailsDialog(QDialog):
                 item = QListWidgetItem(candidate.name)
                 item.setData(Qt.UserRole, candidate)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                item.setCheckState(Qt.Unchecked)
+                item.setCheckState(Qt.CheckState.Unchecked)
                 self.candidateList.addItem(item)
             else:
                 # Log or handle the case where candidate is None

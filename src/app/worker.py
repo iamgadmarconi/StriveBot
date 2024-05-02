@@ -1,7 +1,7 @@
 import re
 import traceback
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PySide6.QtCore import QObject, QThread, Signal
 from threading import Event
 
 
@@ -12,10 +12,10 @@ from src.db.db import JobDAO, CandidateDAO, MatchDAO, CandidateModel
 
 
 class Worker(QThread):
-    finished = pyqtSignal(list)
-    update_status = pyqtSignal(str, object)
-    paused = pyqtSignal(bool)
-    canceled = pyqtSignal()  # Define the canceled signal
+    finished = Signal(list)
+    update_status = Signal(str, object)
+    paused = Signal(bool)
+    canceled = Signal()  # Define the canceled signal
 
     def __init__(self, agent, input_text, all_profiles, dao: JobDAO):
         super().__init__()
@@ -64,9 +64,9 @@ class Worker(QThread):
         self.resume()  # Resume to allow the thread to exit
 
 class MatchingWorker(QThread):
-    profiles_found = pyqtSignal(list, object)
-    completed = pyqtSignal(str)
-    error = pyqtSignal(str)
+    profiles_found = Signal(list, object)
+    completed = Signal(str)
+    error = Signal(str)
 
     def __init__(self, agent, profiles, jobs: list[Job], jobdao: JobDAO, matchdao: MatchDAO):
         super().__init__()
@@ -91,8 +91,8 @@ class MatchingWorker(QThread):
 
 
 class MotivationWorker(QThread):
-    completed = pyqtSignal(str)  # Signal to indicate completion with a message
-    error = pyqtSignal(str)  # Signal to indicate an error with a message
+    completed = Signal(str)  # Signal to indicate completion with a message
+    error = Signal(str)  # Signal to indicate an error with a message
 
     def __init__(self, agent, job, candidates: list[Profile], matchdao: MatchDAO):
         super().__init__()

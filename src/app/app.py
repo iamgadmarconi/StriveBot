@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QVBoxLayout,
@@ -109,7 +109,7 @@ class JobApplicationGUI(QMainWindow):
 
     def exportJobs(self):
         jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
-                if self.jobList.item(i).checkState() == Qt.Checked]
+                if self.jobList.item(i).checkState() == Qt.CheckState.Checked]
         if jobs:
             for job in jobs:
                 save_job_to_csv(job) 
@@ -121,7 +121,7 @@ class JobApplicationGUI(QMainWindow):
         self.matchButton.setEnabled(False)
         self.matchButton.setText("Matching...")
         jobs = [self.jobList.item(i).data(Qt.UserRole) for i in range(self.jobList.count())
-                if self.jobList.item(i).checkState() == Qt.Checked]
+                if self.jobList.item(i).checkState() == Qt.CheckState.Checked]
         if jobs:
             self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs, self.jobdao, self.matchdao)
             self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
@@ -144,7 +144,7 @@ class JobApplicationGUI(QMainWindow):
                 item = QListWidgetItem(candidate.name)
                 item.setData(Qt.UserRole, candidate)
                 item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                item.setCheckState(Qt.Unchecked)
+                item.setCheckState(Qt.CheckState.Unchecked)
                 dialog.candidateList.addItem(item)
             # Do not show or activate the dialog here
             print(f"Candidates updated for job {job.position} in background.")  # Optional debug
@@ -179,7 +179,7 @@ class JobApplicationGUI(QMainWindow):
         item = QListWidgetItem(f"{job.position} at {job.company}")
         item.setData(Qt.UserRole, job)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-        item.setCheckState(Qt.Unchecked)
+        item.setCheckState(Qt.CheckState.Unchecked)
         self.jobList.addItem(item)
 
     def cancel_search(self):
@@ -250,7 +250,7 @@ class JobApplicationGUI(QMainWindow):
         item = QListWidgetItem(f"{job.position} at {job.company}")
         item.setData(Qt.UserRole, job)
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-        item.setCheckState(Qt.Unchecked)
+        item.setCheckState(Qt.CheckState.Unchecked)
         self.jobList.addItem(item)
 
     def closeEvent(self, event):
