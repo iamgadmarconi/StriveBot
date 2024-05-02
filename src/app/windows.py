@@ -208,7 +208,7 @@ class JobDetailsDialog(QDialog):
             dialog = CandidateDetailsDialog(candidate, self)
             self.candidate_dialogs[candidate.id] = dialog
 
-        dialog.exec_()
+        dialog.show()
 
     def match_candidates(self):
         self.matchCandidatesButton.setEnabled(False)
@@ -284,6 +284,8 @@ class CandidateDetailsDialog(QDialog):
         self._parent_id = parent.id
         self.initUI()
 
+        self.setModal(False)
+
     @property
     def id(self):
         return self._id
@@ -345,7 +347,10 @@ class CandidateDetailsDialog(QDialog):
         self.motivationWorker.start()
 
     def on_motivation_completed(self, message):
-        motivation = self.candidate.get_job_match(self.parent_id)[1]
+        if isinstance(self.candidate, Profile):
+            motivation = self.candidate.get_job_match(self.parent_id)[1]
+        elif isinstance(self.candidate, CandidateModel):
+            motivation = self.parent.matchdao.get_motivation(self.parent.job.id, self.candidate.id)
         self.motivationWidget.setText(motivation)
         QMessageBox.information(self, "Success", message)
         self.createMotivationButton.setText("Recreate Motivation Letter")

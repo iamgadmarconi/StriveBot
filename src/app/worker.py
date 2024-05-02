@@ -113,6 +113,7 @@ class MotivationWorker(QThread):
                 new_motivation = motivation_letter(self.agent, candidate, self.job)
                 motivation_obj = Motivation(self.job, new_motivation)
                 candidate.update_motivation(motivation_obj)
+                self.matchdao.update_motivation(self.job.id, candidate.id, motivation_obj.motivation)
 
             self.completed.emit("Success: Motivation letters created successfully.")
         except Exception as e:
