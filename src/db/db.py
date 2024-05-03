@@ -1,3 +1,4 @@
+import os
 import logging
 
 from sqlalchemy import Column, String, ForeignKey, create_engine
@@ -5,6 +6,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
+from src.utils import get_base_path
 
 Base = declarative_base()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -385,7 +387,8 @@ class MatchDAO:
             return None
 
 # Set up the engine and session
-engine = create_engine(r'sqlite:///src\db\_data\jobs.db')
+engine_path = os.path.join(get_base_path(), 'db/_data/jobs.db')
+engine = create_engine(engine_path)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
