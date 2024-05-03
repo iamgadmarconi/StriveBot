@@ -22,7 +22,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
 
-from src.utils import format_bulleted_list
+from src.utils import format_bulleted_list, get_base_path
 from src.app.utils import CustomListWidget
 from src.app.worker import MotivationWorker, MatchingWorker
 from src.profiles import Profile
@@ -331,6 +331,8 @@ class CandidateDetailsDialog(QDialog):
 
         pdf_viewer = QWebEngineView()
         pdf_viewer.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
+        candidate_str = self.candidate.name.replace(" ", "_").lower()
+        resume_path = os.path.join(get_base_path(), "candidates", f"{candidate_str}.pdf")
         candidate_name = self.candidate.name.replace(" ", "_").lower()
         resume_path = os.path.abspath(f"src\\candidates\\{candidate_name}.pdf")
         print(resume_path)

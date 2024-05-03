@@ -130,6 +130,8 @@ class JobApplicationGUI(QMainWindow):
             self.matchingWorker.start()
         else:
             QMessageBox.information(self, "No Selection", "Please select one or more jobs for matching.")
+            self.matchButton.setText("Match Candidates")
+            self.matchButton.setEnabled(True)
 
     def on_match_complete(self, message):
         self.matchButton.setText("Match Candidates")
