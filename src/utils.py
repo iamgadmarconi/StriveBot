@@ -197,10 +197,8 @@ def get_id_from_name(name: str) -> str:
 
 
 def get_base_path():
-    if getattr(sys, 'frozen', False):
-        # If the application is run as a bundle, the PyInstaller bootloader
-        # extends the sys module by a flag frozen=True and sets the app
-        # path into variable _MEIPASS'.
-        return sys._MEIPASS
+    if hasattr(sys, 'frozen'):
+        # cx_Freeze sets the 'frozen' attribute
+        return os.path.dirname(sys.executable)
     else:
         return os.path.dirname(os.path.abspath(__file__))
