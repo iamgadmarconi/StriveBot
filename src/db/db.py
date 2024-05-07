@@ -387,7 +387,7 @@ class MatchDAO:
             return None
 
 # Set up the engine and session
-engine_path = os.path.join(get_base_path(), 'db/_data/jobs.db')
+engine_path = os.path.join(get_base_path(), 'db\\_data\\jobs.db')
 engine = create_engine(f'sqlite:///{engine_path}')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)

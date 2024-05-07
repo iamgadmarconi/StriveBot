@@ -120,7 +120,7 @@ class ProfileManager:
 
 
 def get_data() -> dict:
-    file_path = os.path.join(get_base_path(), r'candidates\candidates.csv')
+    file_path = os.path.join(get_base_path(), 'candidates', 'candidates.csv')
     if not os.path.exists(file_path):
         raise "No candidate file"
     df = pd.read_csv(file_path, delimiter=";")

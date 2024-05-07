@@ -37,8 +37,9 @@ def save_job_to_csv(job: Job, force: bool = False) -> None:
         job.url,
         job.assignment,
     ]
+    file_name = job.position.replace(' ', '_').lower() + '.csv'
 
-    file_path = os.path.join(get_base_path(), 'jobs')
+    file_path = os.path.join(get_base_path(), 'jobs', file_name)
 
     file_exists = os.path.exists(file_path)
 

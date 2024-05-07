@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -24,7 +26,7 @@ from src.app.windows import JobDetailsDialog
 from src.app.utils import CustomListWidget
 
 from src.profiles import ProfileManager
-from src.utils import Agent
+from src.utils import Agent, get_base_path
 from src.scraper import Job
 from src.save import save_job_to_csv
 from src.db.db import JobDAO, CandidateDAO, MatchDAO
@@ -50,7 +52,9 @@ class JobApplicationGUI(QMainWindow):
     def initUI(self, layout):
         self.setWindowTitle("StriiveBot")
         self.setGeometry(100, 100, 1000, 600)
-        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
+        icon_path = os.path.join(get_base_path(), 'app\\static', 'ai.png')
+        # print(icon_path)
+        self.setWindowIcon(QIcon(icon_path))
 
         layout.addWidget(QLabel("Job URL or Keyword:"))
 
@@ -242,7 +246,7 @@ class JobApplicationGUI(QMainWindow):
 
     def load_jobs(self):
         try:
-            jobs = self.jobdao.list_all_jobs()  # Assuming you have a method in JobDAO to fetch all jobs
+            jobs = self.jobdao.list_all_jobs()
             for job in jobs:
                 self.add_job_to_list(job)
         except Exception as e:

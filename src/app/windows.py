@@ -47,7 +47,9 @@ class JobDetailsDialog(QDialog):
 
     def initUI(self):
         self.setWindowTitle("Job Details")
-        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
+        icon_path = os.path.join(get_base_path(), 'app\\static', 'ai.png')
+        # print(icon_path)
+        self.setWindowIcon(QIcon(icon_path))
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
 
@@ -98,10 +100,13 @@ class JobDetailsDialog(QDialog):
         # Status with colored icon
         status_label = QLabel("Status:")
         status_icon = QLabel()
+        icon_path = os.path.join(get_base_path(), 'app\\static')
         if self.job.status == "Open":
-            status_icon.setPixmap(QIcon(r"src\app\static\button.png").pixmap(15, 15))
+            open_icon = os.path.join(icon_path, 'button.png')
+            status_icon.setPixmap(QIcon(open_icon).pixmap(15, 15))
         else:
-            status_icon.setPixmap(QIcon(r"src\app\static\cross.png").pixmap(15, 15))
+            closed_icon = os.path.join(icon_path, 'cross.png')
+            status_icon.setPixmap(QIcon(closed_icon).pixmap(15, 15))
         grid.addWidget(status_label, 5, 0)
         grid.addWidget(status_icon, 5, 1)
 
@@ -308,7 +313,9 @@ class CandidateDetailsDialog(QDialog):
         self.setWindowTitle("Candidate Details")
         self.setGeometry(100, 100, 600, 400)
         self.setMaximumWidth(800)  # Set initial size and position
-        self.setWindowIcon(QIcon(r'src\app\static\ai.png'))
+        icon_path = os.path.join(get_base_path(), 'app\\static', 'ai.png')
+        # print(icon_path)
+        self.setWindowIcon(QIcon(icon_path))
 
         layout = QVBoxLayout()
 
@@ -333,9 +340,7 @@ class CandidateDetailsDialog(QDialog):
         pdf_viewer.settings().setAttribute(QWebEngineSettings.PluginsEnabled, True)
         candidate_str = self.candidate.name.replace(" ", "_").lower()
         resume_path = os.path.join(get_base_path(), "candidates", f"{candidate_str}.pdf")
-        candidate_name = self.candidate.name.replace(" ", "_").lower()
-        resume_path = os.path.abspath(f"src\\candidates\\{candidate_name}.pdf")
-        print(resume_path)
+        # print(resume_path)
         url = QUrl.fromLocalFile(resume_path)
         
         pdf_viewer.load(url)
