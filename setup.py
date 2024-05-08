@@ -18,7 +18,7 @@ build_exe_options = {
 # Base set to "Win32GUI" if you're building a GUI application and you want to hide the console.
 base = "Win32GUI"
 
-icon_path = os.path.join(os.getcwd(), "src\\app\\static", "ai.png")
+icon_path = os.path.join(os.getcwd(), "src\\app\\static", "ai.ico")
 
 setup(
     name="StriveBot",
