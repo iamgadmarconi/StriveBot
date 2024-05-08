@@ -1,4 +1,5 @@
 import os
+import logging
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -18,8 +19,8 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMessageBox,
+    QApplication,
 )
-
 
 from src.app.worker import Worker, MatchingWorker
 from src.app.windows import JobDetailsDialog
@@ -128,7 +129,7 @@ class JobApplicationGUI(QMainWindow):
                 if self.jobList.item(i).checkState() == Qt.CheckState.Checked]
         if jobs:
             self.matchingWorker = MatchingWorker(self.agent, self.all_profiles, jobs, self.jobdao, self.matchdao)
-            self.matchingWorker.profiles_found.connect(self.populate_candidates_tab)
+            self.matchingWorker.profiles_found.connect(self.populate_candidates)
             self.matchingWorker.completed.connect(self.on_match_complete)
             self.matchingWorker.error.connect(self.show_error)
             self.matchingWorker.start()
@@ -142,18 +143,10 @@ class JobApplicationGUI(QMainWindow):
         self.matchButton.setEnabled(True)
         QMessageBox.information(self, "Matching Complete", message)
 
-    def populate_candidates_tab(self, candidates, job):
+    def populate_candidates(self, candidates, job):
         dialog = self.get_job_dialog(job)
-        if dialog:
-            dialog.candidateList.clear()  # Clear existing entries
-            for candidate in candidates:
-                item = QListWidgetItem(candidate.name)
-                item.setData(Qt.UserRole, candidate)
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                item.setCheckState(Qt.CheckState.Unchecked)
-                dialog.candidateList.addItem(item)
-            # Do not show or activate the dialog here
-            print(f"Candidates updated for job {job.position} in background.")  # Optional debug
+        dialog.populate_candidates_tab(candidates)
+        print(f"Candidates updated for job {job.position} in background.")  # Optional debug
 
     def get_job_dialog(self, job):
         if job.id not in self.dialogs:
@@ -182,11 +175,7 @@ class JobApplicationGUI(QMainWindow):
 
     def update_status(self, message: str, job: Job):
         self.statusLabel.setText(f"{message}")
-        item = QListWidgetItem(f"{job.position} at {job.company}")
-        item.setData(Qt.UserRole, job)
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-        item.setCheckState(Qt.CheckState.Unchecked)
-        self.jobList.addItem(item)
+        self.add_job_to_list(job)
 
     def cancel_search(self):
         if self.worker is not None:
@@ -235,7 +224,6 @@ class JobApplicationGUI(QMainWindow):
 
     def display_job_details(self, item):
         job = item.data(Qt.UserRole)
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_job_dialog(job)
         if not dialog:
             dialog = JobDetailsDialog(self, job, self.candidatedao, self.matchdao)
@@ -243,6 +231,7 @@ class JobApplicationGUI(QMainWindow):
 
         self.child_windows.append(dialog)
         dialog.show()
+        dialog.finished.connect(lambda: self.handleDialogClosed(item))
 
     def load_jobs(self):
         try:
@@ -263,3 +252,14 @@ class JobApplicationGUI(QMainWindow):
             for window in self.child_windows:
                 window.close()  # Ensure all child windows are closed
             event.accept()
+
+    def resetSelection(self):
+            self.jobList.clearSelection()
+            self.jobList.clearFocus()
+            logging.debug("Selection and focus cleared in job list.")
+
+    def handleDialogClosed(self, item):
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        self.jobList.clearFocus()
+        self.jobList.setCurrentItem(None)  # Optionally deselect the item
+        QApplication.processEvents() # Ensure the item is visually deselected

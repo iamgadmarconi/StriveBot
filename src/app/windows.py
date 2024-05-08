@@ -1,4 +1,5 @@
 import os
+import logging
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -16,7 +17,7 @@ from PySide6.QtWidgets import (
     QApplication,
 )
 from PySide6.QtWidgets import QWidget, QMessageBox
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QDesktopServices, QIcon, QTextOption
 from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -40,6 +41,7 @@ class JobDetailsDialog(QDialog):
         self.matchdao = matchdao
         self.candidate_dialogs = {}
         self.initUI()
+        self.finished.connect(self.onFinished)
 
     @property
     def id(self):
@@ -205,6 +207,19 @@ class JobDetailsDialog(QDialog):
         self.widget.setLayout(layout)
         return self.widget
     
+    def populate_candidates_tab(self, candidates):
+        self.candidateList.clear()
+        for candidate in candidates:
+            if candidate is not None:
+                self.add_candidate(candidate)
+    
+    def add_candidate(self, candidate):
+        item = QListWidgetItem(candidate.name)
+        item.setData(Qt.UserRole, candidate)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        item.setCheckState(Qt.CheckState.Unchecked)
+        self.candidateList.addItem(item)
+    
     def get_candidate_dialog(self, candidate):
         if candidate.id not in self.candidate_dialogs:
             self.candidate_dialogs[candidate.id] = CandidateDetailsDialog(candidate, self)
@@ -212,7 +227,6 @@ class JobDetailsDialog(QDialog):
 
     def display_candidate_details(self, item):
         candidate = item.data(Qt.UserRole)
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         dialog = self.get_candidate_dialog(candidate)
         if not dialog:
             dialog = CandidateDetailsDialog(candidate, self)
@@ -224,7 +238,7 @@ class JobDetailsDialog(QDialog):
         self.matchCandidatesButton.setEnabled(False)
         self.matchCandidatesButton.setText("Matching Candidates...")
         self.matchingWorker = MatchingWorker(self.agent, self.par.all_profiles, [self.job], self.par.jobdao, self.matchdao)
-        self.matchingWorker.profiles_found.connect(self.par.populate_candidates_tab)
+        self.matchingWorker.profiles_found.connect(self.par.populate_candidates)
         self.matchingWorker.completed.connect(self.on_match_complete)
         self.matchingWorker.error.connect(self.show_error)
         self.matchingWorker.start()
@@ -284,6 +298,19 @@ class JobDetailsDialog(QDialog):
             else:
                 # Log or handle the case where candidate is None
                 print("Encountered None candidate, skipping...")
+
+    def onFinished(self, result):
+            if self.parent():
+                self.parent().resetSelection()
+            logging.debug("Dialog finished and selection reset.")
+
+    def closeEvent(self, event):
+        logging.debug("Closing dialog...")
+        super().closeEvent(event)
+        if self.parent():
+            self.parent().resetSelection()
+        logging.debug("Dialog closed and attempted to reset selection.")
+
 
 
 class CandidateDetailsDialog(QDialog):
