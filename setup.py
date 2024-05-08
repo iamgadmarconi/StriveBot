@@ -1,6 +1,7 @@
 import os
 from cx_Freeze import setup, Executable
 
+manifest_file = 'app.manifest'
 
 # Dependencies are automatically detected, but it might need fine tuning.
 build_exe_options = {
@@ -12,6 +13,7 @@ build_exe_options = {
         (os.path.join(os.getcwd(), "src/candidates"), "candidates/"),
         (os.path.join(os.getcwd(), "src/db"), "db/"),
         (os.path.join(os.getcwd(), "src/app/static"), "app/static/"),
+        (manifest_file, '.'), # Include the manifest file
     ]
 }
 
@@ -26,5 +28,9 @@ setup(
     description="StriveBot",
     long_description="A bot for automating job applications on Striive.",
     options={"build_exe": build_exe_options},
-    executables=[Executable("main.py", base=base, icon=icon_path, target_name="StriveBot")]
+    executables=[Executable(
+        "main.py",
+        base=base,
+        icon=icon_path,
+        target_name="StriveBot",)]
 )
