@@ -19,7 +19,7 @@ def categorize_description(agent: Agent, text: str) -> dict:
             {
                 "role": "system",
                 "content": f"""
-                    You are an assistant designed to categorize the text into 3 distinct categories:\n
+                    You are an assistant designed to categorize the text from a job posting into 3 distinct categories:\n
                     - REQUIREMENTS\n (e.g. qualifications, experience, etc.)
                     - PREFERENCES\n (e.g. wishes, desires, etc.)
                     - SKILLS\n (e.g. competencies, abilities, etc.)
